@@ -1,0 +1,7 @@
+ProofOfLife.Organisms.World50Killer 0 18.8
+ProofOfLife.Organisms.World49Lineage 0 45.0
+ProofOfLife.Organisms.World42Lineage 0 68.8
+ProofOfLife.Organisms.World52Lineage 0 51.0
+ProofOfLife.Organisms.World46Lineage 0 70.4
+ProofOfLife.Organisms.World56Lineage 0 44.9
+ProofOfLife.Organisms.World58Lineage 0 38.8

@@ -1,0 +1,8 @@
+ProofOfLife.Organisms.World50Achilles
+ProofOfLife.Organisms.World1006Killer
+ProofOfLife.Organisms.World1007Killer
+ProofOfLife.Organisms.World1008Killer
+ProofOfLife.Organisms.World1011Killer
+ProofOfLife.Organisms.World1012Killer
+ProofOfLife.Organisms.World1013Killer
+ProofOfLife.Organisms.World1024Killer

@@ -1,0 +1,14 @@
+import puppeteer from "puppeteer-core";
+const url = new URL("../dist-proof/preview.html", import.meta.url).href;
+const browser = await puppeteer.launch({ executablePath: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", headless: "new" });
+const page = await browser.newPage();
+await page.setViewport({ width: 1280, height: 900 });
+await page.emulateMediaFeatures([{ name: "prefers-color-scheme", value: "dark" }]);
+page.on("pageerror", (e) => console.log("pageerror:", e.message));
+await page.goto(url, { waitUntil: "networkidle2" });
+await page.select("#b-speed", "80");
+await page.evaluate(() => document.getElementById("b-play").click());
+await page.waitForFunction(() => document.getElementById("b-play").textContent === "Replay the collision", { timeout: 60000 });
+console.log(await page.$eval("#b-new", (e) => e.textContent), "|", await page.$eval("#b-lblB", (e) => e.textContent));
+const el = await page.$("#birth"); await el.screenshot({ path: "../.shots/birth.png" });
+await browser.close();

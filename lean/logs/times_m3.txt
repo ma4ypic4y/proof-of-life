@@ -1,0 +1,12 @@
+ProofOfLife.Organisms.PaperFig4Lineage 0 0.5
+ProofOfLife.Organisms.World7Lineage 0 45.5
+ProofOfLife.Organisms.World2Lineage 0 49.2
+ProofOfLife.Organisms.World29Lineage 0 0.5
+ProofOfLife.Organisms.World10Lineage 0 51.6
+ProofOfLife.Organisms.World12Lineage 0 52.6
+ProofOfLife.Organisms.World30Lineage 0 46.5
+ProofOfLife.Organisms.World37Lineage 0 45.5
+ProofOfLife.Organisms.World15Lineage 0 67.4
+ProofOfLife.Organisms.World32Lineage 0 67.1
+ProofOfLife.Organisms.World41Lineage 0 41.6
+ProofOfLife.Organisms.World38Lineage 0 54.7

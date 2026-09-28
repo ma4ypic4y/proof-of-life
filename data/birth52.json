@@ -1,0 +1,36 @@
+{
+ "seed": 52,
+ "epoch_index": 5857,
+ "lineage_before": 0,
+ "lineage_after": 1,
+ "births": [
+  {
+   "slot": 65971,
+   "pair_index": 30117,
+   "left_slot": 65224,
+   "right_slot": 65971,
+   "parent_left": "5b5b5b2e5b085b7228dd643ffda027711e7dfe5b5b725b72b54edc3c7d731e2c7113277dc91e2c711327c9a019fdc23f02dd63dda62841a009a60064350100da",
+   "parent_right": "5d5d3c3b9d3b3b393ff13c3b3c3b3cc03c3b3c3b7163003b000019ca9584843b2c19962c3ce13d52caed3c3cbc4b7b1e3d3b3cc2dea6ff5b00013d3c72a69ed1",
+   "mutations": [],
+   "tape_after_mutation": "5b5b5b2e5b085b7228dd643ffda027711e7dfe5b5b725b72b54edc3c7d731e2c7113277dc91e2c711327c9a019fdc23f02dd63dda62841a009a60064350100da5d5d3c3b9d3b3b393ff13c3b3c3b3cc03c3b3c3b7163003b000019ca9584843b2c19962c3ce13d52caed3c3cbc4b7b1e3d3b3cc2dea6ff5b00013d3c72a69ed1",
+   "child_left": "5b5b5b2e5b085b7228dd643ffda027711e7dfe5b5b725b72b54edc3c7d731e2c712c1e737d3cdc4eb5725b725b5bfe7d1e7127a0fd3f64dd28725b085b2e5b5b",
+   "child_right": "5b2e723f715b723c2c7d71a03fdda064da3b393bc03b633b3bc03b3bf1393b3b5d3b3b39f13b3bc03b3b633bc03b393bda64a0dd3fa0717d2c3c725b713f722e",
+   "matches_saved_soup": true,
+   "which_child_is_lineage": "right",
+   "lineage_strand": "+",
+   "status": {
+    "parent_left": "not certifiable: would execute a partner byte at step 64",
+    "parent_right": "abstract run finishes, child not an exact copy",
+    "child_left": "not certifiable: loop test reads a partner byte at step 42",
+    "child_right": "exact mirror copier for every partner (abstract run)"
+   },
+   "glyphs": {
+    "parent_left": "[[[.[\u00b7[\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7}\u00b7[[\u00b7[\u00b7\u00b7\u00b7\u00b7<}\u00b7\u00b7,\u00b7\u00b7\u00b7}\u00b7\u00b7,\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b70\u00b7\u00b7\u00b70\u00b7",
+    "parent_right": "]]<\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7<\u00b7<\u00b7<\u00b7<\u00b7<\u00b7\u00b7\u00b70\u00b700\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7,\u00b7\u00b7,<\u00b7\u00b7\u00b7\u00b7\u00b7<<\u00b7\u00b7{\u00b7\u00b7\u00b7<\u00b7\u00b7\u00b7\u00b7[0\u00b7\u00b7<\u00b7\u00b7\u00b7\u00b7",
+    "child_left": "[[[.[\u00b7[\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7}\u00b7[[\u00b7[\u00b7\u00b7\u00b7\u00b7<}\u00b7\u00b7,\u00b7,\u00b7\u00b7}<\u00b7\u00b7\u00b7\u00b7[\u00b7[[\u00b7}\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7[\u00b7[.[[",
+    "child_right": "[.\u00b7\u00b7\u00b7[\u00b7<,}\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7]\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7},<\u00b7[\u00b7\u00b7\u00b7.",
+    "genome": "\u00b7\u00b7\u00b7\u00b7\u00b7[\u00b7<,}\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7]\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7},<\u00b7[\u00b7\u00b7\u00b7."
+   }
+  }
+ ]
+}

@@ -1,0 +1,28 @@
+import puppeteer from "puppeteer-core";
+const url = new URL("../dist-proof/preview.html", import.meta.url).href;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const browser = await puppeteer.launch({ executablePath: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", headless: "new" });
+const page = await browser.newPage();
+await page.setViewport({ width: 1280, height: 900 });
+await page.emulateMediaFeatures([{ name: "prefers-color-scheme", value: process.argv[2] === "light" ? "light" : "dark" }]);
+page.on("pageerror", (e) => console.log("pageerror:", e.message));
+await page.goto(url, { waitUntil: "networkidle2" });
+const runDemo = async (i, alt) => {
+  await page.evaluate((i) => document.querySelectorAll("#picker button")[i].click(), i);
+  if (alt) await page.evaluate(() => document.getElementById("alt").click());
+  await page.select("#speed", "60");
+  await page.evaluate(() => document.getElementById("play").click());
+  await page.waitForFunction(() => document.getElementById("play").textContent === "Run the proof", { timeout: 60000 });
+  return page.$eval("#verdict", (e) => e.textContent);
+};
+console.log("52:", await runDemo(0));
+console.log("50:", await runDemo(1));
+console.log("50 killer:", await runDemo(1, true));
+console.log("1005:", await runDemo(2));
+console.log("1007:", await runDemo(3));
+await page.evaluate(() => document.querySelectorAll("#picker button")[0].click());
+await page.select("#speed", "8");
+await page.evaluate(() => document.getElementById("play").click());
+await sleep(2500);
+await page.screenshot({ path: "../.shots/proof.png", fullPage: true });
+await browser.close();

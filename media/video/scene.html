@@ -1,0 +1,222 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<title>Proof of Life — video scene</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<style>html,body{margin:0;background:#0b100f}canvas{display:block}</style>
+</head><body>
+<svg width="0" height="0" style="position:absolute">
+  <!-- keep only the blue (+) and orange (-) programs of a world frame, then grow them into glows -->
+  <filter id="glowPlus" color-interpolation-filters="sRGB">
+    <feColorMatrix type="matrix" values="-0.6 0 0.6 0 0  -0.9 0 0.9 0 0  -2 0 2 0 0  -3 0 3 0 0"/>
+    <feMorphology operator="dilate" radius="3"/><feGaussianBlur stdDeviation="3"/>
+  </filter>
+  <filter id="glowMinus" color-interpolation-filters="sRGB">
+    <feColorMatrix type="matrix" values="2 0 -2 0 0  1 0 -1 0 0  0.4 0 -0.4 0 0  3 0 -3 0 0"/>
+    <feMorphology operator="dilate" radius="3"/><feGaussianBlur stdDeviation="3"/>
+  </filter>
+</svg>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>
+// Deterministic video scene: render(t) draws the frame at time t (seconds).
+// Everything shown is real data: the two parents and the newborn of world 52,
+// the actual run of their collision, and frames of world 52 itself.
+"use strict";
+const W = 1920, H = 1080, FPS = 30, DURATION = 28;
+const cv = document.getElementById("c"), g = cv.getContext("2d");
+const COL = { bg: "#0b100f", panel: "#151d1b", ink: "#e8efec", mute: "#7d8c87", dim: "#34413d",
+  plus: "#5b9bff", minus: "#ff8a4c", lean: "#2cc39c", bad: "#ff6a52",
+  loop: "#2cc39c", copy: "#f05aa2", move: "#9a8cf5", arith: "#f0a33a", zero: "#ff6a52" };
+const OPC = { 60: "move", 62: "move", 123: "move", 125: "move", 43: "arith", 45: "arith", 46: "copy", 44: "copy", 91: "loop", 93: "loop" };
+const DISPLAY = "'Bricolage Grotesque', sans-serif", MONO = "'JetBrains Mono', monospace";
+let DATA = null, FRAMES = {}, EVENTS = [];
+const hex2 = (h) => Array.from(h.match(/../g), (x) => parseInt(x, 16));
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const ease = (x) => { x = clamp(x); return x < 0.5 ? 2 * x * x : 1 - (-2 * x + 2) ** 2 / 2; };
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const fmt = (n) => Math.round(n).toLocaleString("en-US");
+
+function text(s, x, y, size, opts = {}) {
+  g.save();
+  g.globalAlpha = opts.alpha ?? 1;
+  g.font = `${opts.weight || 700} ${size}px ${opts.font || DISPLAY}`;
+  g.fillStyle = opts.color || COL.ink;
+  g.textAlign = opts.align || "left"; g.textBaseline = opts.base || "alphabetic";
+  if (opts.spacing) g.letterSpacing = opts.spacing;
+  g.fillText(s, x, y);
+  g.restore();
+}
+function glyph(b) { return b === -1 ? "?" : OPC[b] ? String.fromCharCode(b) : b === 0 ? "0" : "·"; }
+function gcol(b) { return b === -1 ? COL.mute : OPC[b] ? COL[OPC[b]] : b === 0 ? COL.zero : COL.dim; }
+function rr(x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+// A row of 64 cells. fill(i) may return a tint colour for cell i.
+function tape(bytes, x0, y0, opts = {}) {
+  const n = bytes.length, cw = opts.cw || 27, ch = opts.ch || 72, gap = 2;
+  for (let i = 0; i < n; i++) {
+    const x = x0 + i * (cw + gap), b = bytes[i];
+    const tint = opts.fill ? opts.fill(i, b) : null;
+    g.save(); g.globalAlpha = opts.alpha ?? 1;
+    rr(x, y0, cw, ch, 3); g.fillStyle = tint || COL.panel; g.fill();
+    if (opts.ip === i) { g.lineWidth = 2.5; g.strokeStyle = COL.ink; rr(x + 1, y0 + 1, cw - 2, ch - 2, 3); g.stroke(); }
+    g.font = `${OPC[b] ? 700 : 400} ${Math.round(Math.min(ch * 0.42, cw * 1.05))}px ${MONO}`;
+    g.fillStyle = tint && b !== -1 ? (OPC[b] ? "#0b100f" : "rgba(11,16,15,.55)") : gcol(b);
+    g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillText(glyph(b), x + cw / 2, y0 + ch / 2 + 1);
+    g.restore();
+  }
+  return { cw, ch, gap, x0, y0 };
+}
+function head(geo, i, above, label) {
+  const x = geo.x0 + i * (geo.cw + geo.gap) + geo.cw / 2, y = above ? geo.y0 - 8 : geo.y0 + geo.ch + 8;
+  g.save(); g.fillStyle = COL.ink; g.beginPath();
+  if (above) { g.moveTo(x - 11, y - 16); g.lineTo(x + 11, y - 16); g.lineTo(x, y); } else { g.moveTo(x - 11, y + 16); g.lineTo(x + 11, y + 16); g.lineTo(x, y); }
+  g.fill(); g.restore();
+  if (label) text(label, x, above ? y - 24 : y + 44, 22, { font: MONO, weight: 600, color: COL.mute, align: "center" });
+}
+
+// ---------------------------------------------------------------- the collision run (cubff semantics)
+function runEvents(tape0) {
+  const t = tape0.slice(); let pos = 0, h0 = 0, h1 = 0; const ev = [{ t: t.slice(), pos, h0, h1, step: 0 }];
+  for (let step = 0; step < 8192; step++) {
+    h0 &= 127; h1 &= 127; const c = t[pos]; let wrote = -1, old = 0;
+    if (c === 60) h0--; else if (c === 62) h0++; else if (c === 123) h1--; else if (c === 125) h1++;
+    else if (c === 43) { old = t[h0]; t[h0] = (t[h0] + 1) & 255; wrote = h0; }
+    else if (c === 45) { old = t[h0]; t[h0] = (t[h0] - 1) & 255; wrote = h0; }
+    else if (c === 46) { old = t[h1]; t[h1] = t[h0]; wrote = h1; }
+    else if (c === 44) { old = t[h0]; t[h0] = t[h1]; wrote = h0; }
+    else if (c === 91 && t[h0] === 0) { let d = 1; pos++; for (; pos < 128 && d > 0; pos++) { if (t[pos] === 93) d--; if (t[pos] === 91) d++; } pos--; if (d) pos = 128; }
+    else if (c === 93 && t[h0] !== 0) { let d = 1; pos--; for (; pos >= 0 && d > 0; pos--) { if (t[pos] === 93) d++; if (t[pos] === 91) d--; } pos++; if (d) break; }
+    if (wrote >= 0 && t[wrote] !== old) ev.push({ t: t.slice(), pos, h0: h0 & 127, h1: h1 & 127, step: step + 1, wrote });
+    pos++; if (pos >= 128) break;
+  }
+  return ev;
+}
+
+// ---------------------------------------------------------------- scenes
+function bgFrame(epoch, alpha, zoom, bright, glow) {
+  const img = FRAMES[epoch]; if (!img) return;
+  const w = 1920 * zoom, h = 960 * zoom, x = (W - w) / 2, y = (H - h) / 2;
+  g.save(); g.globalAlpha = alpha; g.imageSmoothingEnabled = false; g.filter = `brightness(${bright || 1})`;
+  g.drawImage(img, x, y, w, h);
+  g.restore();
+  if (glow) { // make single lineage programs visible even on a phone
+    for (const f of ["url(#glowPlus)", "url(#glowMinus)"]) {
+      g.save(); g.globalAlpha = alpha * glow; g.globalCompositeOperation = "lighter"; g.filter = f; g.imageSmoothingEnabled = false;
+      g.drawImage(img, x, y, w, h); g.restore();
+    }
+  }
+}
+function vignette(a) { const gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, `rgba(11,16,15,${a})`); gr.addColorStop(0.45, `rgba(11,16,15,${a * 0.2})`); gr.addColorStop(1, `rgba(11,16,15,${a})`); g.fillStyle = gr; g.fillRect(0, 0, W, H); }
+
+function render(t) {
+  g.fillStyle = COL.bg; g.fillRect(0, 0, W, H);
+  const A = hex2(DATA.A), B = hex2(DATA.B), C = hex2(DATA.C), R = C.slice().reverse();
+  const film = DATA.film, epochs = film.map((f) => f.epoch);
+
+  // S1 — noise (0–4.2)
+  if (t < 4.6) {
+    const a = t < 4.0 ? 1 : 1 - seg(t, 4.0, 4.6);
+    bgFrame(5700, a, 1 + 0.05 * (t / 4.6), 2.8);
+    vignette(0.7 * a);
+    text("131,072 random programs.", 120, 180, 84, { alpha: ease(seg(t, 0.3, 0.9)) * a });
+    text("We watched life begin in one of them —", 120, 280, 60, { weight: 700, alpha: ease(seg(t, 1.3, 1.9)) * a });
+    text("then proved it.", 120, 360, 60, { weight: 700, color: COL.lean, alpha: ease(seg(t, 2.1, 2.7)) * a });
+    text("No goal. No fitness. Only collisions.", 120, H - 120, 34, { font: MONO, weight: 600, color: COL.mute, alpha: ease(seg(t, 2.6, 3.2)) * a });
+  }
+  // S2 — collision (4.2–11.2)
+  if (t >= 4.2 && t < 11.6) {
+    const a = seg(t, 4.2, 4.7) * (1 - seg(t, 11.2, 11.6));
+    text("World 52 · epoch 5,858 · collision 30,117 of 65,536", 120, 150, 28, { font: MONO, weight: 600, color: COL.mute, alpha: a });
+    text("Two programs that can’t copy themselves collide.", 120, 240, 64, { alpha: a * ease(seg(t, 4.5, 5.1)) });
+    const slide = ease(seg(t, 4.4, 5.4));
+    const k = Math.round((EVENTS.length - 1) * ease(seg(t, 5.8, 10.2)));
+    const e = EVENTS[t < 5.8 ? 0 : k];
+    const x0 = (W - 64 * 29) / 2;
+    const gA = tape(e.t.slice(0, 64), x0 - (1 - slide) * 300, 420, { alpha: a * slide });
+    const gB = tape(e.t.slice(64), x0 + (1 - slide) * 300, 600, { alpha: a * slide,
+      fill: (i, b) => (t > 5.8 && b === C[i] ? `rgba(91,155,255,${0.35 + 0.6 * seg(t, 5.8, 10.2)})` : null) });
+    text("program A", x0, 400, 28, { font: MONO, weight: 700, color: COL.mute, alpha: a * slide });
+    text("program B", x0, 580, 28, { font: MONO, weight: 700, color: COL.mute, alpha: a * slide });
+    if (t >= 5.8 && t < 11.2) {
+      if (e.h0 < 64) head(gA, e.h0, true, "head 0"); else head(gB, e.h0 - 64, true, "head 0");
+      if (e.h1 < 64) head(gA, e.h1, false, "head 1"); else head(gB, e.h1 - 64, false, "head 1");
+      text(`step ${fmt(e.step)} of 8,192`, W - 32, 780, 34, { font: MONO, weight: 700, color: COL.mute, align: "right", alpha: a });
+    }
+    const same = e.t.slice(64).reduce((n, b, i) => n + (b === C[i] ? 1 : 0), 0);
+    text(t < 5.8 ? "no mutation in this collision" : `${same} / 64 bytes of something new`, x0, 780, 40, { font: MONO, weight: 700, color: same === 64 ? COL.plus : COL.mute, alpha: a });
+  }
+  // S3 — the newborn copies itself backwards (11.2–14.6)
+  if (t >= 11.2 && t < 14.9) {
+    const a = seg(t, 11.2, 11.7) * (1 - seg(t, 14.5, 14.9));
+    text("One of the pieces copies itself —", 120, 210, 64, { alpha: a });
+    text("backwards.", 120, 290, 64, { alpha: a * ease(seg(t, 11.6, 12.1)), color: COL.minus });
+    const x0 = (W - 64 * 29) / 2;
+    tape(C, x0, 430, { alpha: a, fill: () => "rgba(91,155,255,.9)" });
+    const sweep = ease(seg(t, 12.0, 13.8)); const done = Math.round(64 * sweep);
+    const child = Array.from({ length: 64 }, (_, j) => (j >= 64 - done ? R[j] : -1));
+    const gC = tape(child, x0, 620, { alpha: a, fill: (j, b) => (b !== -1 ? "rgba(255,138,76,.9)" : null) });
+    if (done < 64 && t > 12.0) head(gC, 63 - done, false, "write");
+    text("the newborn", x0, 410, 28, { font: MONO, weight: 700, color: COL.plus, alpha: a });
+    text("its child", x0, 600, 28, { font: MONO, weight: 700, color: COL.minus, alpha: a });
+    text("the child is the parent, read right to left", x0, 800, 40, { font: MONO, weight: 700, color: COL.ink, alpha: a * seg(t, 13.6, 14.0) });
+  }
+  // S4 — explosion (14.6–20.6): real frames of world 52
+  if (t >= 14.6 && t < 21.0) {
+    const a = seg(t, 14.6, 15.1) * (1 - seg(t, 20.6, 21.0));
+    const i0 = epochs.indexOf(5856), i1 = epochs.length - 1;
+    const p = seg(t, 15.0, 19.6);
+    const fi = Math.round(i0 + (i1 - i0) * (p < 0.7 ? (p / 0.7) * 0.55 : 0.55 + ((p - 0.7) / 0.3) * 0.45));
+    const f = film[Math.min(i1, fi)];
+    const n = f.plus + f.minus;
+    bgFrame(f.epoch, a, 1.0, n < 3000 ? 1.6 : Math.max(1, 1.6 - (n - 3000) / 20000), n < 3000 ? 1 : Math.max(0, 1 - (n - 3000) / 30000));
+    vignette(0.9 * a);
+    g.save(); g.globalAlpha = a * 0.82; g.fillStyle = COL.bg; rr(80, 80, 760, 260, 24); g.fill(); rr(W - 820, H - 230, 740, 150, 20); g.fill(); g.restore();
+    text(fmt(n), 120, 230, 150, { weight: 800, alpha: a });
+    text(n === 1 ? "descendant" : "descendants", 130, 300, 44, { weight: 500, color: COL.mute, alpha: a });
+    text(`epoch ${fmt(f.epoch)}`, W - 120, 120, 30, { font: MONO, weight: 600, color: COL.mute, align: "right", alpha: a });
+    text(`${fmt(f.plus)} read forwards`, W - 120, H - 150, 34, { font: MONO, weight: 700, color: COL.plus, align: "right", alpha: a });
+    text(`${fmt(f.minus)} read backwards`, W - 120, H - 100, 34, { font: MONO, weight: 700, color: COL.minus, align: "right", alpha: a });
+  }
+  // S5 — the proof (20.6–25.6)
+  if (t >= 20.6 && t < 26.0) {
+    const a = seg(t, 20.6, 21.1) * (1 - seg(t, 25.6, 26.0));
+    text("Luck? Lean checked every possible partner.", 120, 210, 64, { alpha: a });
+    const x0 = (W - 64 * 29) / 2;
+    tape(C, x0, 360, { alpha: a, fill: () => "rgba(91,155,255,.9)" });
+    const sweep = ease(seg(t, 21.4, 23.2)); const done = Math.round(64 * sweep);
+    const partner = Array.from({ length: 64 }, (_, j) => (j >= 64 - done ? R[j] : -1));
+    const gP = tape(partner, x0, 520, { alpha: a, fill: (j, b) => (b !== -1 ? "rgba(255,138,76,.85)" : null) });
+    if (done < 64 && t > 21.4) head(gP, 63 - done, false, "");
+    text("the newborn", x0, 340, 28, { font: MONO, weight: 700, color: COL.plus, alpha: a });
+    text("its partner: any of 256⁶⁴ possibilities", x0, 500, 28, { font: MONO, weight: 700, color: COL.mute, alpha: a });
+    const s = ease(seg(t, 23.3, 23.8));
+    if (s > 0) {
+      g.save(); g.globalAlpha = a * s; g.translate(W / 2, 790); g.scale(1.25 - 0.25 * s, 1.25 - 0.25 * s);
+      rr(-520, -70, 1040, 140, 70); g.lineWidth = 5; g.strokeStyle = COL.lean; g.stroke();
+      g.font = `800 64px ${DISPLAY}`; g.fillStyle = COL.lean; g.textAlign = "center"; g.textBaseline = "middle";
+      g.fillText("∀ 256⁶⁴ partners  ·  Q.E.D.", 0, 4); g.restore();
+      text("checked by the Lean 4 kernel · no sorry · no native_decide", W / 2, 935, 26, { font: MONO, weight: 600, color: COL.mute, align: "center", alpha: a * s });
+    }
+  }
+  // S6 — end card (25.6–28)
+  if (t >= 25.6) {
+    const a = seg(t, 25.6, 26.2);
+    text("Proof of Life", W / 2, 470, 150, { weight: 800, align: "center", alpha: a });
+    text("the moment life began in a digital soup, formally verified", W / 2, 560, 40, { weight: 500, color: COL.mute, align: "center", alpha: a * seg(t, 26.0, 26.5) });
+    text("github.com/ma4ypic4y/proof-of-life", W / 2, 690, 40, { font: MONO, weight: 700, color: COL.lean, align: "center", alpha: a * seg(t, 26.3, 26.8) });
+    text("built on Google’s Computational Life (Agüera y Arcas et al., 2024)", W / 2, H - 90, 26, { font: MONO, weight: 600, color: COL.mute, align: "center", alpha: a * seg(t, 26.5, 27.0) });
+  }
+}
+
+async function init() {
+  DATA = await (await fetch("scene_data.json")).json();
+  EVENTS = runEvents(hex2(DATA.A).concat(hex2(DATA.B)));
+  const want = new Set([5700, ...DATA.film.map((f) => f.epoch)]);
+  await Promise.all([...want].map((e) => new Promise((res) => { const im = new Image(); im.onload = () => { FRAMES[e] = im; res(); }; im.onerror = res; im.src = `frames/${String(e).padStart(6, "0")}.png`; })));
+  await document.fonts.load(`800 64px ${DISPLAY}`); await document.fonts.load(`500 64px ${DISPLAY}`); await document.fonts.load(`700 20px ${MONO}`); await document.fonts.load(`400 20px ${MONO}`);
+  window.render = render; window.DURATION = DURATION; window.FPS = FPS; window.EVENT_COUNT = EVENTS.length;
+  window.READY = true;
+  if (!location.hash.includes("capture")) { const t0 = performance.now(); const loop = () => { render(((performance.now() - t0) / 1000) % DURATION); requestAnimationFrame(loop); }; loop(); }
+}
+init();
+</script>
+</body></html>

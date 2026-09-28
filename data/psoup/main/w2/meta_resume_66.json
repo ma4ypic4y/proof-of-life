@@ -1,0 +1,18 @@
+{
+ "out": "runs/psoup/main",
+ "seed": 1,
+ "worlds": 4,
+ "n": 128,
+ "epochs": 150,
+ "model": "mlx-community/Qwen2.5-1.5B-Instruct-4bit",
+ "temp": 0.7,
+ "max_chars": 160,
+ "max_tokens": 40,
+ "words": 12,
+ "orient": "system",
+ "load": null,
+ "from_epoch": 66,
+ "resume": true,
+ "world_seed": 2,
+ "resumed_at": 66
+}

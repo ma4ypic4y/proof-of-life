@@ -1,0 +1,13 @@
+ProofOfLife.Organisms.World2 0 141.8
+ProofOfLife.Organisms.World7 0 157.6
+ProofOfLife.Organisms.PaperFig4 0 229.9
+ProofOfLife.Organisms.World10 0 268.0
+ProofOfLife.Organisms.World15 0 190.5
+ProofOfLife.Organisms.World12 0 246.6
+ProofOfLife.Organisms.World29 0 160.8
+ProofOfLife.Organisms.World30 0 199.9
+ProofOfLife.Organisms.World32 0 169.4
+ProofOfLife.Organisms.World37 0 162.3
+ProofOfLife.Organisms.World38 0 205.8
+ProofOfLife.Organisms.World41 0 178.8
+ProofOfLife.Organisms.World11 0 700.9

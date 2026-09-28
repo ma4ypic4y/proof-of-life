@@ -1,0 +1,120 @@
+  <section id="prompts">
+    <div class="stack measure">
+      <div class="eyebrow">Act two · the chemistry is a language model</div>
+      <h2>A primordial soup of prompts</h2>
+      <p>BFF works because code and data share one tape. A language model gives you that for free: any text can be read as instructions or as input. So we kept the protocol and swapped the chemistry. The soup is 128 short texts that start as random dictionary words. Each epoch they are paired at random, and in each pair one text becomes the system prompt and the other the user message of a small open model (Qwen2.5-1.5B-Instruct, run locally). The reply, cut to 160 characters, overwrites the user message. No task, no goal, no selection.</p>
+      <p id="ps-lede"></p>
+    </div>
+    <div class="chart-box"><canvas class="chart" id="ps-chart" height="320"></canvas></div>
+    <p class="caption" id="ps-cap"></p>
+    <div class="phase-cards" id="ps-phases"></div>
+    <div class="bench">
+      <div class="controls">
+        <label class="readout" for="ps-epoch">epoch</label>
+        <input type="range" id="ps-epoch" min="0" max="0" value="0" step="1">
+        <span class="readout" id="ps-epoch-n">0</span>
+      </div>
+      <div class="legend" id="ps-legend"></div>
+      <div class="textgrid" id="ps-grid"></div>
+    </div>
+  </section>
+<script id="psoup-data" type="application/json">/*PSOUP_JSON*/</script>
+<script>
+(() => {
+"use strict";
+const P = JSON.parse(document.getElementById("psoup-data").textContent);
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const W = P.worlds;
+const C = P.control || [];
+const meanOf = (set, key) => { const n = Math.max(...set.map((w) => w.epoch.length)); return Array.from({ length: n }, (_, i) => { const v = set.map((w) => w[key][i]).filter((x) => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; }); };
+const show = W.find((w) => w.snaps) || W[0];
+const mean = (key) => W[0].epoch.map((_, i) => { const v = W.map((w) => w[key][i]).filter((x) => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; });
+const series = [["confused", "--zero", "says it does not understand"], ["persist", "--loop", "rewrite keeps the slot’s own lineage"], ["copy", "--copy", "rewrite copies the system-prompt text"]];
+
+function draw() {
+  const cv = document.getElementById("ps-chart");
+  const Wd = cv.clientWidth, H = 320, dpr = window.devicePixelRatio || 1;
+  cv.width = Wd * dpr; cv.height = H * dpr; cv.style.height = H + "px";
+  const g = cv.getContext("2d"); g.scale(dpr, dpr);
+  const L = 40, R = 12, T = 14, B = 30, E = W[0].epoch[W[0].epoch.length - 1];
+  const x = (e) => L + (e / E) * (Wd - L - R), y = (v) => T + (1 - v) * (H - T - B);
+  g.font = "11px " + css("--mono"); g.fillStyle = css("--ink-3"); g.strokeStyle = css("--rule"); g.lineWidth = 1;
+  for (let v = 0; v <= 1.0001; v += 0.25) { g.beginPath(); g.moveTo(L, y(v)); g.lineTo(Wd - R, y(v)); g.stroke(); g.fillText(Math.round(v * 100) + "%", 4, y(v) + 4); }
+  const step = E > 120 ? 50 : 10;
+  for (let e = 0; e <= E; e += step) g.fillText(String(e), x(e) - 6, H - 10);
+  for (const [key, color] of series) {
+    g.globalAlpha = 0.28; g.lineWidth = 1; g.strokeStyle = css(color);
+    for (const w of W) { g.beginPath(); let started = false; w[key].forEach((v, i) => { if (v == null) return; const px = x(w.epoch[i]), py = y(v); started ? g.lineTo(px, py) : g.moveTo(px, py); started = true; }); g.stroke(); }
+    g.globalAlpha = 1; g.lineWidth = 2.4; g.beginPath(); let started = false;
+    mean(key).forEach((v, i) => { if (v == null) return; const px = x(W[0].epoch[i]), py = y(v); started ? g.lineTo(px, py) : g.moveTo(px, py); started = true; });
+    g.stroke();
+  }
+  if (C.length) {
+    const cm = meanOf(C, "copy"), ce = C.reduce((a, w) => (w.epoch.length > a.length ? w.epoch : a), []);
+    g.setLineDash([6, 4]); g.strokeStyle = css("--copy"); g.lineWidth = 2.2; g.beginPath(); let st = false;
+    cm.forEach((v, i) => { if (v == null || ce[i] > E) return; st ? g.lineTo(x(ce[i]), y(v)) : g.moveTo(x(ce[i]), y(v)); st = true; });
+    g.stroke(); g.setLineDash([]);
+  }
+  let ly = T + 12;
+  const leg = series.map(([, c, l]) => [c, l, false]).concat(C.length ? [["--copy", "copies with the roles swapped (control)", true]] : []);
+  for (const [color, label, dashed] of leg) {
+    g.fillStyle = css(color);
+    if (dashed) { g.fillRect(Wd - R - 290, ly - 8, 6, 3); g.fillRect(Wd - R - 282, ly - 8, 6, 3); } else g.fillRect(Wd - R - 290, ly - 8, 14, 3);
+    g.fillStyle = css("--ink-2"); g.fillText(label, Wd - R - 270, ly - 3); ly += 16;
+  }
+}
+draw();
+let rs = 0; window.addEventListener("resize", () => { clearTimeout(rs); rs = setTimeout(draw, 150); });
+
+// phase cards: noise, peak confusion, and the end state
+const cm = mean("confused");
+const peak = cm.indexOf(Math.max(...cm.filter((v) => v != null)));
+const lastIdx = show.snaps.length - 1;
+const snapAt = (e) => show.snaps.reduce((best, s) => (Math.abs(s.epoch - e) < Math.abs(best.epoch - e) ? s : best), show.snaps[0]);
+const CONF = /sorry|apologi|not sure what|unclear|could you (please )?(clarify|provide)|provide (more|some|additional) (context|details|information)|don't understand|do not understand|not able to understand|seems like (you|there)|appears to be a (list|collection|mix|random)|random (words|string|collection)|unrelated words/i;
+function pick(snap, wantConf) {
+  const t = snap.texts.filter((s) => !!CONF.test(s) === wantConf);
+  return (t.length ? t : snap.texts)[0];
+}
+const mid = snapAt(Math.round(W[0].epoch[W[0].epoch.length - 1] * 0.3));
+const cards = [
+  ["epoch 0 · noise", pick(show.snaps[0], false)],
+  [`epoch ${snapAt(W[0].epoch[peak]).epoch} · confusion peaks (${Math.round(cm[peak] * 100)}% of the soup)`, pick(snapAt(W[0].epoch[peak]), true)],
+  [`epoch ${mid.epoch} · lineages`, pick(mid, false)],
+  [`epoch ${show.snaps[lastIdx].epoch} · end of run`, pick(show.snaps[lastIdx], false)],
+];
+document.getElementById("ps-phases").innerHTML = cards.map(([w, t]) => `<div class="quote"><div class="when">${w}</div><p>${t.replace(/</g, "&lt;")}</p></div>`).join("");
+
+// slider grid, coloured by lineage (largest clusters get colours)
+const COLORS = ["--plus", "--minus", "--loop", "--copy", "--move", "--arith"];
+const slider = document.getElementById("ps-epoch");
+slider.max = String(lastIdx);
+function grid(idx) {
+  const s = show.snaps[idx];
+  document.getElementById("ps-epoch-n").textContent = s.epoch;
+  const size = {}; s.cluster.forEach((c) => (size[c] = (size[c] || 0) + 1));
+  const ranked = Object.keys(size).filter((c) => size[c] > 1).sort((a, b) => size[b] - size[a]).slice(0, COLORS.length);
+  const col = {}; ranked.forEach((c, i) => (col[c] = COLORS[i]));
+  document.getElementById("ps-grid").innerHTML = s.texts.map((t, i) => {
+    const c = col[s.cluster[i]], conf = CONF.test(t);
+    const style = c ? `style="box-shadow: inset 3px 0 0 var(${c})"` : conf ? `style="box-shadow: inset 3px 0 0 var(--zero)"` : "";
+    return `<div ${style} title="${t.replace(/"/g, "&quot;")}">${t.replace(/</g, "&lt;")}</div>`;
+  }).join("");
+  const nconf = s.texts.filter((t) => CONF.test(t)).length;
+  document.getElementById("ps-legend").innerHTML =
+    `<span><i style="color:var(--zero)">▍</i> confused (${nconf})</span>` +
+    ranked.map((c, i) => `<span><i style="color:var(${COLORS[i]})">▍</i> lineage of ${size[c]}</span>`).join("") +
+    `<span>${Object.keys(size).length} distinct lineages among ${s.texts.length} texts</span>`;
+}
+slider.oninput = () => grid(+slider.value);
+slider.value = String(Math.min(lastIdx, show.snaps.findIndex((s) => s.epoch >= W[0].epoch[peak]))); grid(+slider.value);
+
+// averages over the last ten epochs, which are steadier than any single epoch
+const tail = (set, key, k = 10) => { const v = []; set.forEach((w) => v.push(...w[key].slice(-k).filter((x) => x != null))); return v.reduce((a, b) => a + b, 0) / Math.max(1, v.length); };
+document.getElementById("ps-cap").textContent =
+  `${W.length} independent soups (thin lines) and their mean (thick)${C.length ? `; dashed: mean of ${C.length} control soups with the roles swapped` : ""}. A rewrite counts as a copy when the reply shares more character 5-grams with the acting text than with the text it replaced (Jaccard ≥ 0.3), and as keeping the lineage in the opposite case.`;
+document.getElementById("ps-lede").textContent =
+  `Across ${W.length} independent soup${W.length === 1 ? "" : "s"} of ${W[0].epoch[W[0].epoch.length - 1]} epochs the same three phases appear. Within a few epochs the random words turn into the model saying it cannot understand them: at the peak ${Math.round(cm[peak] * 100)}% of the soup is some version of “I’m sorry, could you clarify?”. That text is an attractor, not a replicator: the model produces it from any nonsense, so it carries no information of its own. Then the soup escapes into topics, and slots start to keep their own lineage: over the last ten epochs ${Math.round(tail(W, "persist") * 100)}% of rewrites preserve the text they replace, while only ${Math.round(tail(W, "copy") * 100)}% copy the system prompt into the partner. Heredity appears; reproduction does not.` +
+  (C.length ? ` That is a property of the chemistry, not a blind spot of the measurement. In control soups with the roles swapped, where the acting text is sent as the user message, the same model becomes a copier: ${Math.round(tail(C, "copy") * 100)}% of rewrites copy the acting text and only ${Math.round(tail(C, "persist") * 100)}% keep their own lineage.` : "");
+})();
+</script>

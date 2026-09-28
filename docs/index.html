@@ -1,0 +1,50 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><style>html{color-scheme:light dark}body{margin:0}</style></head><body><title>Proof of Life</title>
+<meta name="description" content="A formally verified origin of life in a digital primordial soup.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:opsz,wght@8..60,400&display=swap">
+<style>
+:root { --bg: #0b100f; --card: #121917; --ink: #e8efec; --ink2: #a3b0ab; --ink3: #74827d; --rule: #26302d; --lean: #2cc39c; --plus: #5b9bff; --minus: #ff8a4c; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: "Source Serif 4", Georgia, serif; font-size: 18px; line-height: 1.55; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-inline: 20px; padding-block: 48px 72px; display: flex; flex-direction: column; gap: 26px; }
+.eyebrow { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink3); }
+h1 { font-family: "Bricolage Grotesque", system-ui, sans-serif; font-weight: 800; font-size: clamp(52px, 9vw, 112px); letter-spacing: -0.04em; line-height: 1; margin: 0; }
+h1 span { color: var(--lean); }
+.dek { font-size: clamp(19px, 2.2vw, 24px); color: var(--ink2); max-width: 760px; margin: 0; }
+video { width: 100%; max-width: 100%; border-radius: 12px; border: 1px solid var(--rule); background: #000; display: block; }
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 720px) { .facts { grid-template-columns: 1fr; } }
+.fact { border-top: 2px solid var(--ink); padding-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.fact b { font-family: "Bricolage Grotesque", system-ui, sans-serif; font-size: 34px; line-height: 1.05; }
+.fact span { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12.5px; line-height: 1.5; color: var(--ink2); }
+.links { display: flex; flex-wrap: wrap; gap: 12px; }
+.links a { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 14px; color: var(--ink); text-decoration: none; border: 1px solid var(--rule); border-radius: 8px; padding: 12px 16px; background: var(--card); }
+.links a.primary { border-color: var(--lean); color: var(--lean); }
+.links a:hover { border-color: var(--ink2); }
+.links a:focus-visible { outline: 2px solid var(--lean); outline-offset: 2px; }
+code { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 14px; background: var(--card); border: 1px solid var(--rule); border-radius: 8px; padding: 14px 16px; display: block; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); }
+footer { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12px; color: var(--ink3); }
+footer a { color: var(--ink2); }
+</style>
+<div class="wrap">
+  <div class="eyebrow">Computational Life · Lean 4</div>
+  <h1>Proof of Life<span>.</span></h1>
+  <p class="dek">In a soup of 131,072 random programs, two programs that cannot copy themselves collide, with no mutation. One of the pieces that comes out copies itself, backwards, into every one of the 256<sup>64</sup> possible partners. We reconstructed that collision byte for byte and proved it in Lean.</p>
+  <video src="media/proof_of_life_720p.mp4" poster="media/poster.png" controls muted playsinline preload="metadata"></video>
+  <div class="facts">
+    <div class="fact"><b>1 birth</b><span>certified: the exact collision where life began in world 52, epoch 5,858</span></div>
+    <div class="fact"><b>22 of 25</b><span>organisms under the paper’s rules proved to copy themselves for every partner (7 of 28 under the other head rule)</span></div>
+    <div class="fact"><b>99.99%</b><span>of 24 million copy steps in living soups run backwards, so every species lives as two mirror strands</span></div>
+  </div>
+  <code>theorem birth_certificate_world52 :
+  run (A ++ B) = A_out ++ C ∧
+  (∀ X : Vector UInt8 64, run (C ++ X) = C ++ C.reverse) ∧ …</code>
+  <div class="links">
+    <a class="primary" href="proof/">Run the proof →</a>
+    <a href="life/">Life copied backwards →</a>
+    <a href="https://github.com/ma4ypic4y/proof-of-life">Code, proofs, data →</a>
+  </div>
+  <footer>Built on “Computational Life” (Agüera y Arcas, Alakuijala, Evans, Laurie, Mordvintsev, Niklasson, Randazzo, Versari, 2024) and Google’s <a href="https://github.com/paradigms-of-intelligence/cubff">cubff</a>.</footer>
+</div>
+</body></html>

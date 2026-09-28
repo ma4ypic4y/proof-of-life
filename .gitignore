@@ -1,0 +1,35 @@
+# large or regenerable data (every world re-runs from its seed; see README)
+data/controls/
+data/local/
+data/birth52/
+data/film52/
+data/film52b/*.png
+data/psoup/pilot0/
+data/psoup/pilot0.out
+data/psoup/pilot_run
+data/psoup/*.out
+runs/
+# build outputs (the public site is docs/)
+web/dist/
+web/dist-proof/
+web/img/
+web/.shots/
+web/tools/node_modules/
+media/proof_of_life.mp4
+media/proof_of_life_720p.mp4
+media/video/frames/
+lean/.lake/
+engine/tol
+engine/tol_naive
+engine/copygeo
+engine/*.o
+# personal drafts and references
+thread/
+ref/
+__pycache__/
+*.pyc
+.DS_Store
+*.webm
+data/psoup/*/w*/soup.jsonl
+data/atlas/final/
+data/atlas_heads/final/

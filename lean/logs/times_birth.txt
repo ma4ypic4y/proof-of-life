@@ -1,0 +1,6 @@
+ProofOfLife.Birth52.ParentB 0 48
+ProofOfLife.Birth52.ParentA 0 68
+ProofOfLife.Birth52.NewbornRev 0 116
+ProofOfLife.Birth52.Newborn 0 117
+ProofOfLife.Birth52.Collision 0 197
+ProofOfLife.Birth52.Certificate 0 1

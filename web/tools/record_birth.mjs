@@ -1,0 +1,22 @@
+// Tweet video of the birth section: node record_birth.mjs <out.webm>
+import puppeteer from "puppeteer-core";
+const [,, out] = process.argv;
+const url = new URL("../dist-proof/preview.html", import.meta.url).href;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const browser = await puppeteer.launch({ executablePath: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", headless: "new", args: ["--hide-scrollbars"] });
+const page = await browser.newPage();
+await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 });
+await page.emulateMediaFeatures([{ name: "prefers-color-scheme", value: "dark" }]);
+await page.goto(url, { waitUntil: "networkidle2" });
+await page.evaluate(() => document.fonts.ready);
+await page.evaluate(() => { document.body.style.zoom = "1.6"; });
+await page.evaluate(() => { const el = document.querySelector("#birth"); window.scrollTo(0, (el.querySelector(".birth-grid").getBoundingClientRect().top + scrollY) - 20); });
+await sleep(600);
+const rec = await page.screencast({ path: out });
+await sleep(2500);
+await page.select("#b-speed", "3");
+await page.evaluate(() => document.getElementById("b-play").click());
+await page.waitForFunction(() => document.getElementById("b-play").textContent === "Replay the collision", { timeout: 120000 });
+await sleep(4500);
+await rec.stop();
+await browser.close();

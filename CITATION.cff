@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite it and the original Computational Life paper."
+title: "Proof of Life: a formally verified origin of life in a digital primordial soup"
+authors:
+  - family-names: Borisov
+    given-names: Maksim
+date-released: 2026-09-29
+url: "https://github.com/ma4ypic4y/proof-of-life"
+license: MIT
+references:
+  - type: article
+    title: "Computational Life: How Well-formed, Self-replicating Programs Emerge from Simple Interaction"
+    authors:
+      - family-names: Agüera y Arcas
+        given-names: Blaise
+      - family-names: Alakuijala
+        given-names: Jyrki
+      - family-names: Evans
+        given-names: James
+      - family-names: Laurie
+        given-names: Ben
+      - family-names: Mordvintsev
+        given-names: Alexander
+      - family-names: Niklasson
+        given-names: Eyvind
+      - family-names: Randazzo
+        given-names: Ettore
+      - family-names: Versari
+        given-names: Luca
+    year: 2024
+    url: "https://arxiv.org/abs/2406.19108"

@@ -1,0 +1,11 @@
+ProofOfLife.Organisms.World49 0 182.6
+ProofOfLife.Organisms.World46 0 227.8
+ProofOfLife.Organisms.World42 0 237.8
+ProofOfLife.Organisms.World52 0 156.3
+ProofOfLife.Organisms.World56 0 130.1
+ProofOfLife.Organisms.World58 0 155.3
+ProofOfLife.Organisms.World48 0 550.7
+ProofOfLife.Organisms.World55 0 350.6
+ProofOfLife.Organisms.World33 0 582.1
+ProofOfLife.Organisms.World1005 0 264.5
+ProofOfLife.Organisms.World1009 0 355.1

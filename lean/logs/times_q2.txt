@@ -1,0 +1,3 @@
+ProofOfLife.Organisms.World48Lineage 0 108.3
+ProofOfLife.Organisms.World33Lineage 0 661.3
+ProofOfLife.Organisms.World11Lineage 0 936.9

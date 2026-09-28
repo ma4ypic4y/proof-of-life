@@ -1,0 +1,597 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><style>html{color-scheme:light dark}body{margin:0}</style></head><body><title>Proof of Life</title>
+<meta name="description" content="Programs that evolved from random noise copy themselves. Lean 4 checks, for every possible partner, which of them really do.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<style>
+:root {
+  --ground: #eef1f0; --panel: #e3e8e6; --card: #f7f9f8; --ink: #111917; --ink-2: #46524e; --ink-3: #75817d; --rule: #c8d0cd;
+  --loop: #0b8a6f; --copy: #c42f78; --move: #6552cc; --arith: #b86a00; --zero: #d03d2a; --filler: #b7c0bd;
+  --plus: #1f63c6; --minus: #e0622a; --unknown: #cfd6d3; --unknown-ink: #8b9793;
+  --proved: #0b8a6f; --heel: #b86a00; --killed: #d03d2a; --focus: #1f63c6;
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body: "Source Serif 4", "Iowan Old Style", Georgia, serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #0c1110; --panel: #141b19; --card: #111816; --ink: #e2e9e6; --ink-2: #a3b0ab; --ink-3: #74827d; --rule: #26302d;
+    --loop: #2cc39c; --copy: #f05aa2; --move: #9a8cf5; --arith: #f0a33a; --zero: #ff6a52; --filler: #3b4744;
+    --plus: #5b9bff; --minus: #ff8a4c; --unknown: #1d2624; --unknown-ink: #5b6a65;
+    --proved: #2cc39c; --heel: #f0a33a; --killed: #ff6a52; --focus: #5b9bff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ground: #0c1110; --panel: #141b19; --card: #111816; --ink: #e2e9e6; --ink-2: #a3b0ab; --ink-3: #74827d; --rule: #26302d;
+  --loop: #2cc39c; --copy: #f05aa2; --move: #9a8cf5; --arith: #f0a33a; --zero: #ff6a52; --filler: #3b4744;
+  --plus: #5b9bff; --minus: #ff8a4c; --unknown: #1d2624; --unknown-ink: #5b6a65;
+  --proved: #2cc39c; --heel: #f0a33a; --killed: #ff6a52; --focus: #5b9bff;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--ground); color: var(--ink); font-family: var(--body); font-size: 18px; line-height: 1.6; margin: 0; }
+.page { max-width: 1120px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 96px; }
+.measure { max-width: 680px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.05; margin: 0; }
+h1 { font-size: clamp(52px, 9.5vw, 120px); font-weight: 800; letter-spacing: -0.04em; }
+h2 { font-size: clamp(30px, 4.2vw, 46px); font-weight: 700; letter-spacing: -0.02em; }
+h3 { font-size: 19px; font-weight: 700; }
+p { margin: 0; }
+a { color: var(--plus); }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+.dek { font-size: clamp(20px, 2.2vw, 25px); line-height: 1.4; color: var(--ink-2); max-width: 780px; }
+.stack { display: flex; flex-direction: column; gap: 18px; }
+section { display: flex; flex-direction: column; gap: 22px; padding-block: 56px 8px; }
+section + section { border-top: 1px solid var(--rule); }
+.caption { font-family: var(--mono); font-size: 12.5px; line-height: 1.55; color: var(--ink-3); max-width: 780px; }
+code { font-family: var(--mono); font-size: .86em; background: var(--panel); padding: .08em .35em; border-radius: 4px; }
+button { font-family: var(--mono); font-size: 13px; color: var(--ink); background: var(--card); border: 1px solid var(--rule); border-radius: 6px; padding: 7px 12px; cursor: pointer; }
+button:hover { border-color: var(--ink-3); }
+button.primary { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+button[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+button:focus-visible, select:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+select { font-family: var(--mono); font-size: 13px; color: var(--ink); background: var(--card); border: 1px solid var(--rule); border-radius: 6px; padding: 7px 10px; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.readout { font-family: var(--mono); font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+/* hero */
+.hero { display: flex; flex-direction: column; gap: 22px; }
+.hero h1 .dot { color: var(--proved); }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.stat { border-top: 2px solid var(--ink); padding-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.stat b { font-family: var(--display); font-size: clamp(30px, 4vw, 44px); font-weight: 700; letter-spacing: -0.02em; line-height: 1; font-variant-numeric: tabular-nums; }
+.stat span { font-family: var(--mono); font-size: 12px; line-height: 1.45; color: var(--ink-2); }
+@media (max-width: 720px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* proof bench */
+.bench { background: var(--card); border: 1px solid var(--rule); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+.picker { display: flex; flex-wrap: wrap; gap: 8px; }
+.tape-label { font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.tape { display: grid; grid-template-columns: repeat(64, minmax(0, 1fr)); gap: 2px; }
+@media (max-width: 760px) { .tape { grid-template-columns: repeat(32, minmax(0, 1fr)); } }
+.cell { position: relative; aspect-ratio: 1 / 1.35; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: clamp(8px, 1.05vw, 12.5px); font-weight: 600; border-radius: 2px; background: var(--panel); color: var(--ink-3); transition: background .2s, color .2s; }
+.cell.f { color: var(--filler); font-weight: 400; }
+.cell.o-loop { color: var(--loop); } .cell.o-copy { color: var(--copy); } .cell.o-move { color: var(--move); }
+.cell.o-arith { color: var(--arith); } .cell.o-zero { color: var(--zero); }
+.cell.u { background: var(--unknown); color: var(--unknown-ink); font-weight: 400; }
+.cell.nz { background: var(--unknown); color: var(--heel); box-shadow: inset 0 0 0 1.5px var(--heel); }
+.cell.learned { background: color-mix(in srgb, var(--minus) 22%, var(--panel)); }
+.cell.ip { box-shadow: inset 0 0 0 2px var(--ink); }
+.cell.test-ok { outline: 2px solid var(--proved); outline-offset: 1px; z-index: 1; }
+.cell.test-bad { outline: 3px solid var(--killed); outline-offset: 1px; z-index: 1; }
+.cell.h0::after, .cell.h1::after { position: absolute; left: 50%; transform: translateX(-50%); font-size: 9px; font-weight: 600; line-height: 1; color: var(--ink-2); }
+.cell.h0::after { content: "0"; top: -11px; } .cell.h1::after { content: "1"; bottom: -11px; } .cell.h0.h1::after { content: "01"; }
+.tape-wrap { display: flex; flex-direction: column; gap: 14px; padding-block: 6px; }
+.meters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 640px) { .meters { grid-template-columns: 1fr; } }
+.meter { display: flex; flex-direction: column; gap: 4px; }
+.meter b { font-family: var(--display); font-size: 26px; font-variant-numeric: tabular-nums; line-height: 1.05; }
+.meter span { font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); }
+.progress { height: 6px; background: var(--panel); border-radius: 99px; overflow: hidden; }
+.progress > div { height: 100%; width: 0; background: var(--ink-3); }
+.verdict { border-radius: 10px; padding: 14px 16px; font-family: var(--mono); font-size: 13.5px; line-height: 1.55; background: var(--panel); color: var(--ink); min-height: 3.2em; }
+.verdict.ok { box-shadow: inset 0 0 0 1.5px var(--proved); }
+.verdict.bad { box-shadow: inset 0 0 0 1.5px var(--killed); }
+.verdict.heel { box-shadow: inset 0 0 0 1.5px var(--heel); }
+.verdict code { background: none; padding: 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
+.legend i { font-style: normal; font-weight: 600; }
+
+/* birth */
+.birth-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 900px) { .birth-grid { grid-template-columns: 1fr; } }
+.certificate { background: var(--card); border: 1px solid var(--rule); border-radius: 12px; padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; }
+.certificate .cert-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.certificate h3 { font-size: 22px; letter-spacing: -0.01em; }
+.qed { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: .12em; padding: 6px 10px; border-radius: 99px; border: 1.5px solid var(--proved); color: var(--proved); white-space: nowrap; }
+.qed.pending { border-style: dashed; color: var(--ink-3); border-color: var(--ink-3); }
+.fields { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 10px 16px; margin: 0; font-size: 15.5px; line-height: 1.45; }
+.fields dt { font-family: var(--mono); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); padding-top: 3px; }
+.fields dd { margin: 0; color: var(--ink); }
+.fields .mini { display: grid; grid-template-columns: repeat(64, minmax(0, 1fr)); height: 12px; gap: 1px; margin-top: 5px; }
+.fields .mini i { display: block; border-radius: 1px; background: var(--panel); }
+.fields .mini i.o-loop { background: var(--loop); } .fields .mini i.o-copy { background: var(--copy); } .fields .mini i.o-move { background: var(--move); }
+.fields .mini i.o-arith { background: var(--arith); } .fields .mini i.o-zero { background: var(--zero); }
+.mark { font-family: var(--mono); font-size: 12px; font-weight: 600; }
+.mark.ok { color: var(--proved); } .mark.no { color: var(--killed); } .mark.wait { color: var(--ink-3); }
+
+/* wall */
+.wall-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.cert { background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.cert header { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+.cert h3 { font-size: 15px; }
+.seal { font-family: var(--mono); font-size: 10.5px; padding: 2px 8px; border-radius: 99px; border: 1px solid currentColor; white-space: nowrap; }
+.seal.proved { color: var(--proved); } .seal.heel { color: var(--heel); } .seal.killed { color: var(--killed); } .seal.none { color: var(--ink-3); } .seal.pending { color: var(--ink-3); border-style: dashed; }
+.strip { display: grid; grid-template-columns: repeat(64, minmax(0, 1fr)); height: 16px; gap: 1px; }
+.strip i { display: block; border-radius: 1px; background: var(--panel); }
+.strip i.o-loop { background: var(--loop); } .strip i.o-copy { background: var(--copy); } .strip i.o-move { background: var(--move); }
+.strip i.o-arith { background: var(--arith); } .strip i.o-zero { background: var(--zero); }
+.cert .meta { font-family: var(--mono); font-size: 11px; color: var(--ink-2); line-height: 1.45; }
+.cert .meta b { color: var(--ink); font-weight: 600; }
+
+/* theorems */
+pre { margin: 0; overflow-x: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 18px; }
+pre code { background: none; padding: 0; font-size: 13.5px; line-height: 1.6; color: var(--ink); }
+.thm-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 18px; }
+@media (max-width: 520px) { .thm-grid { grid-template-columns: 1fr; } }
+.thm { display: flex; flex-direction: column; gap: 8px; }
+.thm h3 { font-size: 16px; }
+.thm p { font-size: 15.5px; line-height: 1.5; color: var(--ink-2); }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-family: var(--mono); font-size: 13.5px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--rule); }
+th { color: var(--ink-3); font-weight: 400; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+td.num, th.num { text-align: right; }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px 28px; }
+.notes div { display: flex; flex-direction: column; gap: 6px; }
+.notes h3 { font-size: 16px; }
+.notes p { font-size: 15.5px; line-height: 1.55; color: var(--ink-2); }
+footer { padding-block: 40px 0; font-family: var(--mono); font-size: 12px; color: var(--ink-3); }
+@media (prefers-reduced-motion: reduce) { .cell { transition: none; } }
+</style>
+
+<div class="page">
+  <header class="hero">
+    <div class="eyebrow">Formal verification · Lean 4 · Computational Life</div>
+    <h1>Proof of Life<span class="dot">.</span></h1>
+    <p class="dek">Self-replicating programs appear on their own in a soup of random code. Testing one on a few thousand partners is evidence. We wanted certainty, so we asked Lean to check, for every one of the 256<sup>64</sup> possible partners, which of them really copy themselves, and to certify the exact collision where life began in one world.</p>
+    <div class="stats" id="stats"></div>
+  </header>
+
+  <section id="birth">
+    <div class="stack measure">
+      <div class="eyebrow">World 52 · epoch 5,858</div>
+      <h2>A birth, certified</h2>
+      <p id="birth-lede"></p>
+    </div>
+    <div class="birth-grid">
+      <div class="bench">
+        <div class="tape-wrap">
+          <div class="tape-label"><span id="b-lblA">parent A · does not copy itself</span><span id="b-step">step 0</span></div>
+          <div class="tape" id="bA"></div>
+          <div class="tape-label"><span id="b-lblB">parent B · does not copy itself</span><span id="b-new"></span></div>
+          <div class="tape" id="bB"></div>
+        </div>
+        <div class="controls">
+          <button class="primary" id="b-play" type="button">Replay the collision</button>
+          <label class="readout" for="b-speed">speed</label>
+          <select id="b-speed"><option value="3">slow</option><option value="12" selected>normal</option><option value="80">fast</option></select>
+        </div>
+        <p class="caption" id="b-cap">The two programs are glued into one 128-byte tape and run, exactly as the soup did it. Watch the right half.</p>
+      </div>
+      <article class="certificate" id="certificate"></article>
+    </div>
+  </section>
+
+  <section id="demo">
+    <div class="stack measure">
+      <div class="eyebrow">What the proof checks</div>
+      <h2>Run it on a partner that could be anything</h2>
+      <p>Instead of trying partners one by one, run the program once against a partner whose 64 bytes are all unknown (<span style="font-family:var(--mono)">?</span>). A byte becomes known only when the program writes it. If the run never has to look at an unknown byte to decide what to do next, its outcome is the same for all 256<sup>64</sup> partners. Lean’s kernel replays exactly this run, all 8,192 steps, and a separate proof shows the shortcut is sound.</p>
+    </div>
+    <div class="bench">
+      <div class="picker" id="picker" role="group" aria-label="Choose an organism"></div>
+      <div class="tape-wrap">
+        <div class="tape-label"><span id="lbl-a">parent</span><span id="lbl-step">step 0 of 8,192</span></div>
+        <div class="tape" id="tapeA"></div>
+        <div class="tape-label"><span id="lbl-b">partner: 256<sup>64</sup> possibilities</span><span id="lbl-left"></span></div>
+        <div class="tape" id="tapeB"></div>
+      </div>
+      <div class="progress" aria-hidden="true"><div id="prog"></div></div>
+      <div class="meters">
+        <div class="meter"><b id="m-unknown">64</b><span>partner bytes still unknown</span></div>
+        <div class="meter"><b id="m-tests">0</b><span>loop tests, all on known bytes</span></div>
+        <div class="meter"><b id="m-bad">0</b><span>decisions that depend on the partner</span></div>
+      </div>
+      <div class="verdict" id="verdict" aria-live="polite"></div>
+      <div class="controls">
+        <button class="primary" id="play" type="button">Run the proof</button>
+        <button id="reset" type="button">Reset</button>
+        <button id="alt" type="button" hidden>Try the killer partner</button>
+        <label class="readout" for="speed">speed</label>
+        <select id="speed"><option value="2">slow</option><option value="8" selected>normal</option><option value="60">fast</option></select>
+      </div>
+      <div class="legend">
+        <span><i style="color:var(--unknown-ink)">?</i> unknown partner byte</span>
+        <span><i style="color:var(--heel)">≠0</i> unknown, but not zero</span>
+        <span><i style="color:var(--proved)">▢</i> loop test on a known byte</span>
+        <span><i style="color:var(--killed)">▢</i> test on an unknown byte: the proof stops</span>
+        <span><i style="color:var(--loop)">[ ]</i> loop <i style="color:var(--copy)">. ,</i> copy <i style="color:var(--move)">&lt; &gt; { }</i> move</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="wall">
+    <div class="wall-head">
+      <div class="stack measure">
+        <div class="eyebrow">Every organism, checked</div>
+        <h2>The certificate wall</h2>
+        <p id="wall-lede"></p>
+      </div>
+    </div>
+    <div class="legend" id="wall-legend"></div>
+    <h3 id="wall-a-title">Heads start at 0 (the paper’s rule)</h3>
+    <div class="wall" id="wall-a"></div>
+    <h3 id="wall-b-title">Heads set by the genome</h3>
+    <div class="wall" id="wall-b"></div>
+  </section>
+
+  <section id="why">
+    <div class="stack measure">
+      <div class="eyebrow">What the proofs say about life</div>
+      <h2>Copying backwards is not only cheaper. It is safer.</h2>
+      <p id="why-p1"></p>
+      <p id="why-p2"></p>
+    </div>
+    <div class="table-wrap"><table id="why-table"></table></div>
+  </section>
+
+  <section id="theorems">
+    <div class="stack measure">
+      <div class="eyebrow">The statements</div>
+      <h2>What Lean actually proved</h2>
+      <p>The theorems are about a Lean transcription of BFF, cross-checked against our Python and C interpreters on 240 test tapes. Each certificate is one kernel computation per organism plus a soundness proof shared by all of them.</p>
+    </div>
+    <div class="thm-grid" id="thms"></div>
+    <div class="table-wrap"><table id="trust"></table></div>
+  </section>
+
+  <section id="notes-sec">
+    <div class="stack measure">
+      <div class="eyebrow">Methods and limits</div>
+      <h2>How to read this</h2>
+    </div>
+    <div class="notes" id="notes"></div>
+  </section>
+  <footer>Built on “Computational Life” (Agüera y Arcas et al., 2024) and Google’s cubff. Organisms come from our re-runs of that experiment; companion page: <a href="../life/">Life Copied Backwards</a>. Code, proofs and data: <a href="https://github.com/ma4ypic4y/proof-of-life">github.com/ma4ypic4y/proof-of-life</a>.</footer>
+</div>
+
+<script id="proof-data" type="application/json">{"organisms":[{"id":"paper-fig4","rule":"noheads","genome":"5b5b7b2e3e5d2d5d2020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020205d2d5d3e2e7b5b5b","alive_epoch":null,"abstract_ok":true,"child":"mirror"},{"id":"world-2","rule":"noheads","genome":"5b38361717b63cb6a12c4c3b7d98b4262836363636365d3c7d4c2e0a2836dcf23626e6e85d36363636362826b4e67d4ca92c3fb63ca1a1356b5bbc36a1a1cb78","alive_epoch":11793,"abstract_ok":true,"child":"mirror"},{"id":"world-7","rule":"noheads","genome":"5b5a5ad4eabcd73a3c3ae8595e3b2c7df44054e407eb073f3ff6544040a8f15d5df4a8404054f63f3f073f073f8a40f47d2c3b5e59e83a3c3ad7bcead45a5a5b","alive_epoch":12545,"abstract_ok":true,"child":"mirror"},{"id":"world-8","rule":"noheads","genome":"00005d007b005d757b3cff76000056675b2c45e527757b5a5d703a4c2400ad3a08ad2c75703c8b293d08367676ad56675b2c45363c757b005d00000000000000","alive_epoch":3585,"abstract_ok":false,"child":null,"stuck_step":16,"stuck_reason":"loop test reads a partner byte","stuck_at":127,"survival":0.0,"killer":"e13b032e112a32b579080f08b1f7ed4c2e5d3a07f97f21ee232d178a209af6b5887f66e8092402aa49f2c1551b27fe53266e490db138489ce814d58d145a8b4f"},{"id":"world-10","rule":"noheads","genome":"c5f8b504d7ae851c7f3b3f7b83a65b5b99f72e483d437b3e304b27d4623bd40a27bd4b5d5d4bbd2799d43b62d42e4b733e7b433de52ea3995baaa64b7b1c3b2e","alive_epoch":14609,"abstract_ok":true,"child":"mirror"},{"id":"world-11","rule":"noheads","genome":"7d5555b2b249493636eaea17173d3d5555c75b3cf8713232f48eb9812c3e7b7b10aaa45b2e453e7b5d7b3e2c2e5bdf17107b4a5555555555c0d255555555a57c","alive_epoch":15985,"abstract_ok":true,"child":"mirror"},{"id":"world-12","rule":"noheads","genome":"323232e8e83b192e398064816d8006875bd57b2e3ecb10448829883c7c94103ecb5d5dcb3e10947c3c8829887c10cb3e2e7bd85b8706807f816480392e193ba6","alive_epoch":11729,"abstract_ok":true,"child":"mirror"},{"id":"world-15","rule":"noheads","genome":"5c5b4e0ada7b215a2e31dde9f5362c3e5d3a7c5b515b0a665b9f7c65cf485b9d0a400a5bca3a5d3e2c36299131312e12c87bda1c5b5b5b5b5b5b5b245b5bf013","alive_epoch":7537,"abstract_ok":true,"child":"mirror"},{"id":"world-29","rule":"noheads","genome":"3afc5b8d8471677b2e3c3ebc3e01017210936d94b951b9d7944e6d9593d4105d5d10d493956d4e94d7b951b9946d93107201013ebc3e3c2e7b6771848d5bfc3a","alive_epoch":945,"abstract_ok":true,"child":"mirror"},{"id":"world-30","rule":"noheads","genome":"82495be50c04e25b463d443ce2082c4539ff28e33d072628013d6c75a3ff7d3a575d573a7dffa31b6c3d012826073de328ff39892c08e23c44b2465be2223f41","alive_epoch":13873,"abstract_ok":true,"child":"mirror"},{"id":"world-32","rule":"noheads","genome":"ff7f7f7b815b3c3b387ca7ffc27d3b84367e748cf52c165d84797d984bce2c10e66193493c86815bd50e8a6df53c913ba8fb062c580e3e780efe0ee40e67c3c3","alive_epoch":3249,"abstract_ok":true,"child":"mirror"},{"id":"world-33","rule":"noheads","genome":"3e0b675b3c3a3c2c3a3bcf593a0a3b3b593a3a3a3a3d5b2e2c3b7ba9963e5d3e3f3b7b3b2c2c3b7b3b3f3e5d3e963b7b3b2c2e5b5b3a3a0c357b733b2235350b","alive_epoch":10785,"abstract_ok":true,"child":"mirror"},{"id":"world-37","rule":"noheads","genome":"422e5be73c0493d6033a9989442c3d7d24e40122c1d1c1ec2201a9a0e470245d5d2470e4a0017c22ecc1d1c12201e4247d3d2c4489993a03d693043ce75b2e42","alive_epoch":5841,"abstract_ok":true,"child":"mirror"},{"id":"world-38","rule":"noheads","genome":"df06df067b1b61e35b0b7d3cac315c2c62b0f1fa68530ca868dbfa52f1dcb05db0dcf152fadb68a82e0c68faf1b06232572c57313c7d5be3614a1b387cad7b87","alive_epoch":913,"abstract_ok":true,"child":"mirror"},{"id":"world-41","rule":"noheads","genome":"5b3cd72c3594f18a6f7f22047c7cb17d5e9859759ba495c57520be3a98ca975d5d5eca983a592075c595a4957559985e7d427c5c04227fadf8f194352cd73c5b","alive_epoch":1937,"abstract_ok":true,"child":"mirror"},{"id":"world-42","rule":"noheads","genome":"8383887bff1519ee166ad0a61b5b3c69a3547a2a2a7d266c2c88885de5f388882c6c267d2a2a7a54a3693c5b1b1ca31bd23b3f7b66e9b23ee96a3c7b6b07fb7d","alive_epoch":7393,"abstract_ok":true,"child":"mirror"},{"id":"world-46","rule":"noheads","genome":"b67b41c0a63b3b3b7970425bb6023d272e7a90d3b5e1e47bdf3ec61d3d475d3d9e1d7f3ee27be4e1d0f72c7a2e273dc53b5bb0d98c3b3d3bb23b43db567b0636","alive_epoch":16065,"abstract_ok":true,"child":"mirror"},{"id":"world-48","rule":"noheads","genome":"a3a3fea4712c857e7ea87e7ec2097e2f7e7e2c3c7eec3d7f2c354d8be735f65b53e0556f36f07d3c542c055d052c543c7df036e055e04c5bf69074ce013d7b79","alive_epoch":7505,"abstract_ok":true,"child":"mirror"},{"id":"world-49","rule":"noheads","genome":"de5b7b2e4eec893e3003646d0cd78f39ed7a1373304e30c3732313857a6aba5d5ded6a7a85132373c3304e3073137aed39b2d70ccd6403303e89ec4e2e7b5bde","alive_epoch":1281,"abstract_ok":true,"child":"mirror"},{"id":"world-50","rule":"noheads","genome":"01c8d8019d3c015b883e8cad797b017a0ae32e2ebd01e38c57047a5de05d7b047b8c978c7b047a2be05d7a04578c6f01bd2e2ee30a7a017b79ad8c3e885b3c01","alive_epoch":1265,"abstract_ok":false,"child":null,"stuck_step":7,"stuck_reason":"loop test reads a partner byte","stuck_at":127,"survival":0.998,"killer":"400cb62f4486c3f653a6713eba0854935060141d54d5d6e2d7ce37c42dc45dd5c0ff907ab1ef39fb16037eb975809e090a161e94d14af54b6a548eb04e25f700"},{"id":"world-52","rule":"noheads","genome":"3d3d723f715b723c2c7d71a03fdda064da3b393bc03b633b3bc03b3bf1393b3b5d3b3b39f13b3bc03b3b633bc03b393bda64a0dd3fa0717d2c3c725b713f722e","alive_epoch":5905,"abstract_ok":true,"child":"mirror"},{"id":"world-54","rule":"noheads","genome":"ff00fe00ff37ff2200ffff40ff5b005bff2cc17d4ea03c20ea5de9e5e236ffffffffcc82a0e5a02d4effffc16b5d3ca04e7dc12c5bffffc1235bffffa6ff5b00","alive_epoch":977,"abstract_ok":false,"child":null,"stuck_step":25,"stuck_reason":"loop test reads a partner byte","stuck_at":127,"survival":0.0,"killer":"e13b032e112a32b579080f08b1f7ed4c2e5d3a07f97f21ee232d178a209af6b5887f66e8092402aa49f2c1551b27fe53266e490db138489ce814d58d145a8b4f"},{"id":"world-55","rule":"noheads","genome":"5baaaa01010101012c5b3c2c7d5da6a68da6aaa6aa86a6a68d6da6bb2bad5d5dadbabba66d8da2a6d8b0a6aaa98da6a6cb7d3c2c2c5b5b5b5b015b5b5b2c2c3c","alive_epoch":14705,"abstract_ok":true,"child":"mirror"},{"id":"world-56","rule":"noheads","genome":"795b3d3cabc7662c7d5d50553e553e7d9b0c0c50223e553e55505d7d2c66662c2cc9662c7d5d50553e55b37d9b0c0c9b7d3e553e55505d7d2c66c7ab3c3d5b32","alive_epoch":11793,"abstract_ok":true,"child":"mirror"},{"id":"world-58","rule":"noheads","genome":"5b7b12c1172e0e9a11118140f573e93e3d537a1f48d8489a1fafffd853e03d5d5d3de028d87aaf1f9a48d8481f94533d3ee973f5bc8111119a0e2e3a7e127b5b","alive_epoch":3729,"abstract_ok":true,"child":"mirror"},{"id":"world-1002","rule":"heads","genome":"5b9b3c41ca9bcaa9ab7a7a7b7a2d2c27345d2c2864ed2d2c94ffff7a9d577a447a343434343434341a343327ff34272c34015d2c3c41ca9bca3cab32ab7a1b5b","alive_epoch":7569,"abstract_ok":false,"child":null,"stuck_step":474,"stuck_reason":"loop test reads a partner byte","stuck_at":63,"survival":0.0,"killer":"e13b032e112a32b579080f08b1f7ed4c2e5d3a07f97f21ee232d178a209af6b5887f66e8092402aa49f2c1551b27fe53266e490db138489ce814d58d145a8b4f"},{"id":"world-1003","rule":"heads","genome":"7d3dad105b3de6e62e5c8e2c5ed62c313f76ce373fce3736212ad7533e76507ef77e7d5d5fbab48e5a7e121c79997e7ed157572c05374d3de6e62e5c8e2c2c2c","alive_epoch":2225,"abstract_ok":false,"child":null,"stuck_step":2,"stuck_reason":"loop test reads a partner byte","stuck_at":125,"survival":0.0,"killer":"e13b032e112a32b579080f08b1f7ed4c2e5d3a07f97f21ee232d178a209af6b5887f66e8092402aa49f2c1551b27fe53266e490db138489ce814d58d145a8b4f"},{"id":"world-1004","rule":"heads","genome":"bc7e3ed67c3f8c8c3edbdb3c3b2e438c3fbb3e583d696611a143fffff4fe5b95412e2cfe35cc3c7b5a3aaf3a1ff7ff5dff935d2d3f353535ffff935dbc7ebcf9","alive_epoch":6625,"abstract_ok":false,"child":null,"stuck_step":1099,"stuck_reason":"loop test reads a partner byte","stuck_at":127,"survival":1.0,"killer":null},{"id":"world-1005","rule":"heads","genome":"12825b2c2cd5f17b1bde3c2e7f5d5d9d12825b2c2cd5f17b1bde3c2e7f5d5d9d12825b2c2cd5f17b1bde3c2e7f5d5d9d12825b2c2cd5f17b1bde3c2e7f5d5d9d","alive_epoch":1345,"abstract_ok":true,"child":"copy"},{"id":"world-1006","rule":"heads","genome":"40800a5b0a5e990a2c7d3e2c3d3d2c497fff97807e737e28844a5da90a92eb588899864a5da90a92eb588844864a72e3e3342c2c692aff2c6c3e44ff2a000000","alive_epoch":8097,"abstract_ok":false,"child":null,"stuck_step":1,"stuck_reason":"loop test reads a partner byte","stuck_at":64,"survival":0.998,"killer":"00e880788638d75e5e6a6919ed1c5842d5f1b939129b3c23ae6a576e9f54d31666dcfda0e1ff36cc1671c34d2cec1b20fad49de9433412dbefba2403dc3ca92f"},{"id":"world-1007","rule":"heads","genome":"40005c1b5b165b2c5e7d5c52fbf8db3e5d413dff5cf80001b226783ab43a8406620040ffff50045600002d001d1b1d015d6529893fb30424502d3f198bb3e77d","alive_epoch":4017,"abstract_ok":false,"child":null,"stuck_step":2,"stuck_reason":"loop test reads a partner byte","stuck_at":64,"survival":0.998,"killer":"00e880788638d75e5e6a6919ed1c5842d5f1b939129b3c23ae6a576e9f54d31666dcfda0e1ff36cc1671c34d2cec1b20fad49de9433412dbefba2403dc3ca92f"},{"id":"world-1008","rule":"heads","genome":"407f5959593bcb91f4e2212121212119ce5b0000000000ce5b005b593d7d57cc81fb582c3e5dfff0bf03d56aa1e3012de9fe9a444c69d54f5d7c0126b70301ff","alive_epoch":3121,"abstract_ok":false,"child":null,"stuck_step":15,"stuck_reason":"loop test reads a partner byte","stuck_at":64,"survival":0.998,"killer":"00e880788638d75e5e6a6919ed1c5842d5f1b939129b3c23ae6a576e9f54d31666dcfda0e1ff36cc1671c34d2cec1b20fad49de9433412dbefba2403dc3ca92f"},{"id":"world-1009","rule":"heads","genome":"ffc0537527d47b2c604ee4aed25b4f03d9d9fe847b1284010e313c2c1b6dfa72e5f1afbf2c5dff2cc1b42cd002b4e1b429b4e32c75b85c7528c1d8c0d621df86","alive_epoch":1841,"abstract_ok":true,"child":"copy"},{"id":"world-1010","rule":"heads","genome":"1dfdbf7ffd5bd1822a582eaa447b3c39392f393a7734303031355d5d5d04fd5b1dfdbf7ffd5bd1822a582eaa447b3c39392f393a7734303031355d5d5d04fd5b","alive_epoch":5265,"abstract_ok":false,"child":null,"stuck_step":633,"stuck_reason":"loop test reads a partner byte","stuck_at":127,"survival":0.0035,"killer":"e13b032e112a32b579080f08b1f7ed4c2e5d3a07f97f21ee232d178a209af6b5887f66e8092402aa49f2c1551b27fe53266e490db138489ce814d58d145a8b4f"},{"id":"world-1011","rule":"heads","genome":"febebebce1e1e45b5401bce172d1d8f93c87955ce2e2ccfebe86cd060436bde288e145e0e4bbe3bcc7e1f9b3830ad154037b77542c5cbc5dcd333caa95dfcefd","alive_epoch":6001,"abstract_ok":false,"child":null,"stuck_step":5,"stuck_reason":"loop test reads a partner byte","stuck_at":126,"survival":0.9955,"killer":"d5308dc47ff71d8530264de323772b108b67970bf0c0cad812c4c17caf6e9cc4d4e5263ea01e683501d7a1c972b850a26d0b7c27550f4c700e1c4283215600e6"},{"id":"world-1012","rule":"heads","genome":"c0ffff005b5b01e2387d8e15de2c3e518686875d3a3981ffffff38002d262f09257fd32f0d5de601db3103d57c535201343e02247d2b3e6427af8b4dba013d7f","alive_epoch":12545,"abstract_ok":false,"child":null,"stuck_step":2,"stuck_reason":"loop test reads a partner byte","stuck_at":64,"survival":0.998,"killer":"00e880788638d75e5e6a6919ed1c5842d5f1b939129b3c23ae6a576e9f54d31666dcfda0e1ff36cc1671c34d2cec1b20fad49de9433412dbefba2403dc3ca92f"},{"id":"world-1013","rule":"heads","genome":"ff3f17385b7878a6285778de78787878787878787878787878ffa7782c2a2cfe3d3c5f7b28a48ffa00fa283c3e5d6efdfdb96c1d000000000000000000000000","alive_epoch":9697,"abstract_ok":false,"child":null,"stuck_step":2,"stuck_reason":"loop test reads a partner byte","stuck_at":127,"survival":0.7915,"killer":"4efff1aa474318544a23a657001f2c4b6f14ddc8a66ac38f9bd8a34d2f858ed2cc8d3ac08c6d98cb1ab2e177fb54c29d0125f5ca98dbf55fcdf45090bdb16956"},{"id":"world-1014","rule":"heads","genome":"bd7d7dfaceff59623e3eebc87d7dfa2cff59626259b8e9fc5c3eeb2c2c5b8f9190416262593232b1ff141d1df3bd907d3eeb2c2c5daa35aac74890427a7b7bbd","alive_epoch":4753,"abstract_ok":true,"child":"copy"},{"id":"world-1015","rule":"heads","genome":"7fbdb938e3bd86362cc666935bf5013cd97f8686d9d97f7fd986e0015b668686c3b97f2186853c8b872c8d09d15e86bd8d922cd68683c9877bbb5d87aeff3eff","alive_epoch":2385,"abstract_ok":false,"child":null,"stuck_step":26,"stuck_reason":"loop test reads a partner byte","stuck_at":126,"survival":0.004,"killer":"e13b032e112a32b579080f08b1f7ed4c2e5d3a07f97f21ee232d178a209af6b5887f66e8092402aa49f2c1551b27fe53266e490db138489ce814d58d145a8b4f"},{"id":"world-1016","rule":"heads","genome":"3f804382bd9882dc835c5b3e8383836d3d3d485c72997272727372a9b05e2c3f2c1ed42001b3b31f7dbd747608d9d6015d987d4565ec6521b64ee7e7d92c5d5d","alive_epoch":2897,"abstract_ok":true,"child":"copy"},{"id":"world-1017","rule":"heads","genome":"77978d76fcfc4af42e4e2a4a115b3c7b882cba4f4fd35d2c7d074f2c5b5b5b5b77978d76fcfc4af42e4e2a4a115b3c7b882cba4f4fd35d2c7d074f2c5b5b5b5b","alive_epoch":10017,"abstract_ok":false,"child":null,"stuck_step":11,"stuck_reason":"loop test reads a partner byte","stuck_at":119,"survival":0.0,"killer":"e13b032e112a32b579080f08b1f7ed4c2e5d3a07f97f21ee232d178a209af6b5887f66e8092402aa49f2c1551b27fe53266e490db138489ce814d58d145a8b4f"},{"id":"world-1018","rule":"heads","genome":"7b3b7b958e086bcf69652d2c6b9288aa1072906e293cc6aa6bf05b792c7b88f08829953c2c5de6a3f37bf05c2e7bef6bef82ef6cef6bee6b6b69cbcb5b5b5b5b","alive_epoch":3073,"abstract_ok":false,"child":null,"stuck_step":24,"stuck_reason":"loop test reads a partner byte","stuck_at":122,"survival":0.0,"killer":"e13b032e112a32b579080f08b1f7ed4c2e5d3a07f97f21ee232d178a209af6b5887f66e8092402aa49f2c1551b27fe53266e490db138489ce814d58d145a8b4f"},{"id":"world-1019","rule":"heads","genome":"3e7d3dad51dc5113c5212322f23ce55bb6aeae2cae033f843d3dad3db225aca53e3aac7ddc133d8ac1ac5d680eae85c4e1c4dc78f1c4abb4ad01787b2cb42b2c","alive_epoch":4993,"abstract_ok":false,"child":null,"stuck_step":94,"stuck_reason":"loop test reads a partner byte","stuck_at":64,"survival":0.0,"killer":"e13b032e112a32b579080f08b1f7ed4c2e5d3a07f97f21ee232d178a209af6b5887f66e8092402aa49f2c1551b27fe53266e490db138489ce814d58d145a8b4f"},{"id":"world-1021","rule":"heads","genome":"3fff70d5afb6f201b0afafafafaff7fcd7af26af9b5bd5d5d53ed5d5d571d59c4f7dd5d6d5d5d5d52c5ddcd143c69d4491d58568ff500c9b5f7e257d2c7e836f","alive_epoch":3089,"abstract_ok":true,"child":"copy"},{"id":"world-1022","rule":"heads","genome":"5b9b904b3c7b2cb49bc0f9c0060625fe2424f4f42323235d255b5b01010101010101010101010101010101010101010101010101010101010101010101010101","alive_epoch":8833,"abstract_ok":false,"child":null,"stuck_step":642,"stuck_reason":"loop test reads a partner byte","stuck_at":63,"survival":1.0,"killer":null},{"id":"world-1023","rule":"heads","genome":"ec2c7fd4d4b335016e2a024dce9bff9bc42c2cc8aa1a015b2c2ca52c3f2c2c2cffff28db7b503c2c5d2c2d5dff172c2cfffd28dc7b3b3c892c2c895dffbf5b5d","alive_epoch":2369,"abstract_ok":false,"child":null,"stuck_step":786,"stuck_reason":"loop test reads a partner byte","stuck_at":63,"survival":0.0,"killer":"e13b032e112a32b579080f08b1f7ed4c2e5d3a07f97f21ee232d178a209af6b5887f66e8092402aa49f2c1551b27fe53266e490db138489ce814d58d145a8b4f"},{"id":"world-1024","rule":"heads","genome":"fd1d5b918f929229292940297b29cb2983293c294b2c5d3fff292c38db292929fd1d5b918f929229292940297b29cb2983293c294b2c5d3fff292c38db292929","alive_epoch":11105,"abstract_ok":false,"child":null,"stuck_step":0,"stuck_reason":"loop test reads a partner byte","stuck_at":125,"survival":0.994,"killer":"400cb62f4486c3f653a6713eba0854935060141d54d5d6e2d7ce37c42dc45dd5c0ff907ab1ef39fb16037eb975809e090a161e94d14af54b6a548eb04e25f700"},{"id":"world-1025","rule":"heads","genome":"3d7c5b173c60093bcef9453f75397c2e3afb94c18b0af6d626842861c17b8738885c5d606163643c3d3e222c2d2bcd8788e7e97be997987879c128ed615b5b5b","alive_epoch":11217,"abstract_ok":false,"child":null,"stuck_step":1984,"stuck_reason":"loop test reads a partner byte","stuck_at":127,"survival":0.0,"killer":"e13b032e112a32b579080f08b1f7ed4c2e5d3a07f97f21ee232d178a209af6b5887f66e8092402aa49f2c1551b27fe53266e490db138489ce814d58d145a8b4f"},{"id":"world-1027","rule":"heads","genome":"ffbf2cf32f0e29612d5b2c2c4a4a4b4b4a4a83838381f3f32c731d1b1d3ca41c1c1dab361cab1c501d73251d24266e25730d8a7b2c02ac0e290d1d5dffbf2500","alive_epoch":2577,"abstract_ok":true,"child":"copy"},{"id":"world-1028","rule":"heads","genome":"3e7d7d7d2e7c791b3e791b8335b0465568a43f51acdf76485bee6dc1f020eaca8417705cd2c24f1b7d3e096767f35a1b10afaf2c5d79266dc17e20eaca841770","alive_epoch":657,"abstract_ok":true,"child":"copy"},{"id":"world-1402","rule":"heads","genome":"fa3bfa0371b25b5b29277bc2625b59675bfafe6dd7bf7bfaf967673c675a830682ba501ea02d2ce3fe5d75bbeb8238e02f3075021cffee812c1b747b6a52aa5e","alive_epoch":4897,"abstract_ok":false,"child":null,"stuck_step":4,"stuck_reason":"loop test reads a partner byte","stuck_at":122,"survival":0.006,"killer":"e13b032e112a32b579080f08b1f7ed4c2e5d3a07f97f21ee232d178a209af6b5887f66e8092402aa49f2c1551b27fe53266e490db138489ce814d58d145a8b4f"},{"id":"world-1403","rule":"heads","genome":"fc3b3caf2c25251c1d1d1d1d1d1d1d1d091d1d1d1d1d1d3aa346055b20022cfb5b2c7b7afc3b3c202c257a5d032c542106fdfd2c2c052c692c2c055b031e540f","alive_epoch":7297,"abstract_ok":false,"child":null,"stuck_step":690,"stuck_reason":"loop test reads a partner byte","stuck_at":63,"survival":1.0,"killer":null},{"id":"world-1406","rule":"heads","genome":"1c7b5bd1d1fefe3c1ec6eec62e3c19763e737b420ed198df4f28285d5d5d5d5d1c7b5bd1d1fefe3c1ec6eec62e3c19763e737b420ed198df4f28285d5d5d5d5d","alive_epoch":2353,"abstract_ok":false,"child":null,"stuck_step":725,"stuck_reason":"loop test reads a partner byte","stuck_at":127,"survival":0.0,"killer":"e13b032e112a32b579080f08b1f7ed4c2e5d3a07f97f21ee232d178a209af6b5887f66e8092402aa49f2c1551b27fe53266e490db138489ce814d58d145a8b4f"}],"lean":{"title":"Proof of Life \u2014 formally verified atlas (Lean 4.21.0, core only)","check_host":"each module was checked by `lake build <module>` (exit 0) on the machine in `check_host`: local = MacBook (10 cores, 16 GB, 5 parallel jobs, other load present); mac_mini = Mac mini M4 (4 parallel jobs). check_seconds = wall-clock of that module's build under that load, so it is an upper bound on the kernel time. Atlas.lean was then elaborated against all module .olean files (`lake env lean Atlas.lean`).","trust_base":"Lean kernel only: every computation is `decide +kernel`; no native_decide, sorry, admit, or new axioms. Checkpoints are untrusted #eval output re-checked by the kernel.","semantics":"ProofOfLife/Semantics.lean: run (noheads, paper rule), runHeads (cubff bff rule)","totals":{"birth":{"proved":1,"failed":0,"skipped":0},"exact":{"proved":29,"failed":0,"skipped":0},"lineage":{"proved":21,"failed":1,"skipped":0},"achilles":{"proved":1,"failed":0,"skipped":0},"killer":{"proved":8,"failed":0,"skipped":3}},"axioms_used":["Quot.sound","propext"],"total_module_check_seconds":10260.7,"all_module_builds_ok":true,"entries":[{"id":"world-52-birth","rule":"noheads","kind":"birth","theorem":"ProofOfLife.Birth52.birth_certificate_world52","statement":"run (A ++ B) = A_out ++ C \u2227 (\u2200 X : Vector UInt8 64, run (C ++ X) = C ++ C.reverse) \u2227 (\u2200 X : Vector UInt8 64, run (C.reverse ++ X) = C.reverse ++ C) \u2227 (run (A ++ killer_A) \u2260 A ++ A.reverse \u2227 run (A ++ killer_A) \u2260 A ++ A) \u2227 (run (B ++ killer_B) \u2260 B ++ B.reverse \u2227 run (B ++ killer_B) \u2260 B ++ B)","module":"ProofOfLife.Birth52.Certificate","status":"proved","note":"","check_seconds":547.0,"check_host":["local"],"check_seconds_by_module":{"ProofOfLife.Birth52.Collision":197.0,"ProofOfLife.Birth52.Newborn":117.0,"ProofOfLife.Birth52.NewbornRev":116.0,"ProofOfLife.Birth52.ParentA":68.0,"ProofOfLife.Birth52.ParentB":48.0,"ProofOfLife.Birth52.Certificate":1.0},"also_checked_on_mac_mini":["ProofOfLife.Birth52.Newborn","ProofOfLife.Birth52.NewbornRev","ProofOfLife.Birth52.ParentA","ProofOfLife.Birth52.ParentB"],"axioms":["propext","Quot.sound"]},{"id":"paper-fig4","rule":"noheads","kind":"exact","theorem":"ProofOfLife.PaperFig4.mirror","statement":"\u2200 B : Vector UInt8 64, run (P ++ B) = P ++ P.reverse","module":"ProofOfLife.Organisms.PaperFig4","status":"proved","note":"","genome":"5b5b7b2e3e5d2d5d2020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020205d2d5d3e2e7b5b5b","check_seconds":229.9,"check_host":["local"],"also_checked_on_mac_mini":["ProofOfLife.Organisms.PaperFig4"],"axioms":["propext","Quot.sound"]},{"id":"paper-fig4","rule":"noheads","kind":"lineage","theorem":"ProofOfLife.PaperFig4.lineage_closed","statement":"(\u2200 B, run (P ++ B) = P ++ P.reverse) \u2227 (\u2200 B, run (P.reverse ++ B) = P.reverse ++ P)","module":"ProofOfLife.Organisms.PaperFig4Lineage","status":"proved","note":"palindrome","genome":"5b5b7b2e3e5d2d5d2020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020205d2d5d3e2e7b5b5b","check_seconds":0.5,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-2","rule":"noheads","kind":"exact","theorem":"ProofOfLife.World2.mirror","statement":"\u2200 B : Vector UInt8 64, run (P ++ B) = P ++ P.reverse","module":"ProofOfLife.Organisms.World2","status":"proved","note":"","genome":"5b38361717b63cb6a12c4c3b7d98b4262836363636365d3c7d4c2e0a2836dcf23626e6e85d36363636362826b4e67d4ca92c3fb63ca1a1356b5bbc36a1a1cb78","check_seconds":141.8,"check_host":["local"],"also_checked_on_mac_mini":["ProofOfLife.Organisms.World2"],"axioms":["propext","Quot.sound"]},{"id":"world-2","rule":"noheads","kind":"lineage","theorem":"ProofOfLife.World2.lineage_closed","statement":"(\u2200 B, run (P ++ B) = P ++ P.reverse) \u2227 (\u2200 B, run (P.reverse ++ B) = P.reverse ++ P)","module":"ProofOfLife.Organisms.World2Lineage","status":"proved","note":"","genome":"5b38361717b63cb6a12c4c3b7d98b4262836363636365d3c7d4c2e0a2836dcf23626e6e85d36363636362826b4e67d4ca92c3fb63ca1a1356b5bbc36a1a1cb78","check_seconds":49.2,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-7","rule":"noheads","kind":"exact","theorem":"ProofOfLife.World7.mirror","statement":"\u2200 B : Vector UInt8 64, run (P ++ B) = P ++ P.reverse","module":"ProofOfLife.Organisms.World7","status":"proved","note":"","genome":"5b5a5ad4eabcd73a3c3ae8595e3b2c7df44054e407eb073f3ff6544040a8f15d5df4a8404054f63f3f073f073f8a40f47d2c3b5e59e83a3c3ad7bcead45a5a5b","check_seconds":157.6,"check_host":["local"],"also_checked_on_mac_mini":["ProofOfLife.Organisms.World7"],"axioms":["propext","Quot.sound"]},{"id":"world-7","rule":"noheads","kind":"lineage","theorem":"ProofOfLife.World7.lineage_closed","statement":"(\u2200 B, run (P ++ B) = P ++ P.reverse) \u2227 (\u2200 B, run (P.reverse ++ B) = P.reverse ++ P)","module":"ProofOfLife.Organisms.World7Lineage","status":"proved","note":"","genome":"5b5a5ad4eabcd73a3c3ae8595e3b2c7df44054e407eb073f3ff6544040a8f15d5df4a8404054f63f3f073f073f8a40f47d2c3b5e59e83a3c3ad7bcead45a5a5b","check_seconds":45.5,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-10","rule":"noheads","kind":"exact","theorem":"ProofOfLife.World10.mirror","statement":"\u2200 B : Vector UInt8 64, run (P ++ B) = P ++ P.reverse","module":"ProofOfLife.Organisms.World10","status":"proved","note":"","genome":"c5f8b504d7ae851c7f3b3f7b83a65b5b99f72e483d437b3e304b27d4623bd40a27bd4b5d5d4bbd2799d43b62d42e4b733e7b433de52ea3995baaa64b7b1c3b2e","check_seconds":268.0,"check_host":["local"],"also_checked_on_mac_mini":["ProofOfLife.Organisms.World10"],"axioms":["propext","Quot.sound"]},{"id":"world-10","rule":"noheads","kind":"lineage","theorem":"ProofOfLife.World10.lineage_closed","statement":"(\u2200 B, run (P ++ B) = P ++ P.reverse) \u2227 (\u2200 B, run (P.reverse ++ B) = P.reverse ++ P)","module":"ProofOfLife.Organisms.World10Lineage","status":"proved","note":"","genome":"c5f8b504d7ae851c7f3b3f7b83a65b5b99f72e483d437b3e304b27d4623bd40a27bd4b5d5d4bbd2799d43b62d42e4b733e7b433de52ea3995baaa64b7b1c3b2e","check_seconds":51.6,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-11","rule":"noheads","kind":"exact","theorem":"ProofOfLife.World11.mirror","statement":"\u2200 B : Vector UInt8 64, run (P ++ B) = P ++ P.reverse","module":"ProofOfLife.Organisms.World11","status":"proved","note":"","genome":"7d5555b2b249493636eaea17173d3d5555c75b3cf8713232f48eb9812c3e7b7b10aaa45b2e453e7b5d7b3e2c2e5bdf17107b4a5555555555c0d255555555a57c","check_seconds":700.9,"check_host":["local"],"axioms":["propext","Quot.sound"]},{"id":"world-11","rule":"noheads","kind":"lineage","theorem":"ProofOfLife.World11.lineage_closed","statement":"(\u2200 B, run (P ++ B) = P ++ P.reverse) \u2227 (\u2200 B, run (P.reverse ++ B) = P.reverse ++ P)","module":"ProofOfLife.Organisms.World11Lineage","status":"proved","note":"","genome":"7d5555b2b249493636eaea17173d3d5555c75b3cf8713232f48eb9812c3e7b7b10aaa45b2e453e7b5d7b3e2c2e5bdf17107b4a5555555555c0d255555555a57c","check_seconds":936.9,"check_host":["local"],"axioms":["propext","Quot.sound"]},{"id":"world-12","rule":"noheads","kind":"exact","theorem":"ProofOfLife.World12.mirror","statement":"\u2200 B : Vector UInt8 64, run (P ++ B) = P ++ P.reverse","module":"ProofOfLife.Organisms.World12","status":"proved","note":"","genome":"323232e8e83b192e398064816d8006875bd57b2e3ecb10448829883c7c94103ecb5d5dcb3e10947c3c8829887c10cb3e2e7bd85b8706807f816480392e193ba6","check_seconds":246.6,"check_host":["local"],"also_checked_on_mac_mini":["ProofOfLife.Organisms.World12"],"axioms":["propext","Quot.sound"]},{"id":"world-12","rule":"noheads","kind":"lineage","theorem":"ProofOfLife.World12.lineage_closed","statement":"(\u2200 B, run (P ++ B) = P ++ P.reverse) \u2227 (\u2200 B, run (P.reverse ++ B) = P.reverse ++ P)","module":"ProofOfLife.Organisms.World12Lineage","status":"proved","note":"","genome":"323232e8e83b192e398064816d8006875bd57b2e3ecb10448829883c7c94103ecb5d5dcb3e10947c3c8829887c10cb3e2e7bd85b8706807f816480392e193ba6","check_seconds":52.6,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-15","rule":"noheads","kind":"exact","theorem":"ProofOfLife.World15.mirror","statement":"\u2200 B : Vector UInt8 64, run (P ++ B) = P ++ P.reverse","module":"ProofOfLife.Organisms.World15","status":"proved","note":"","genome":"5c5b4e0ada7b215a2e31dde9f5362c3e5d3a7c5b515b0a665b9f7c65cf485b9d0a400a5bca3a5d3e2c36299131312e12c87bda1c5b5b5b5b5b5b5b245b5bf013","check_seconds":190.5,"check_host":["local"],"also_checked_on_mac_mini":["ProofOfLife.Organisms.World15"],"axioms":["propext","Quot.sound"]},{"id":"world-15","rule":"noheads","kind":"lineage","theorem":"ProofOfLife.World15.lineage_closed","statement":"(\u2200 B, run (P ++ B) = P ++ P.reverse) \u2227 (\u2200 B, run (P.reverse ++ B) = P.reverse ++ P)","module":"ProofOfLife.Organisms.World15Lineage","status":"proved","note":"","genome":"5c5b4e0ada7b215a2e31dde9f5362c3e5d3a7c5b515b0a665b9f7c65cf485b9d0a400a5bca3a5d3e2c36299131312e12c87bda1c5b5b5b5b5b5b5b245b5bf013","check_seconds":67.4,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-29","rule":"noheads","kind":"exact","theorem":"ProofOfLife.World29.mirror","statement":"\u2200 B : Vector UInt8 64, run (P ++ B) = P ++ P.reverse","module":"ProofOfLife.Organisms.World29","status":"proved","note":"","genome":"3afc5b8d8471677b2e3c3ebc3e01017210936d94b951b9d7944e6d9593d4105d5d10d493956d4e94d7b951b9946d93107201013ebc3e3c2e7b6771848d5bfc3a","check_seconds":160.8,"check_host":["local"],"also_checked_on_mac_mini":["ProofOfLife.Organisms.World29"],"axioms":["propext","Quot.sound"]},{"id":"world-29","rule":"noheads","kind":"lineage","theorem":"ProofOfLife.World29.lineage_closed","statement":"(\u2200 B, run (P ++ B) = P ++ P.reverse) \u2227 (\u2200 B, run (P.reverse ++ B) = P.reverse ++ P)","module":"ProofOfLife.Organisms.World29Lineage","status":"proved","note":"palindrome","genome":"3afc5b8d8471677b2e3c3ebc3e01017210936d94b951b9d7944e6d9593d4105d5d10d493956d4e94d7b951b9946d93107201013ebc3e3c2e7b6771848d5bfc3a","check_seconds":0.5,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-30","rule":"noheads","kind":"exact","theorem":"ProofOfLife.World30.mirror","statement":"\u2200 B : Vector UInt8 64, run (P ++ B) = P ++ P.reverse","module":"ProofOfLife.Organisms.World30","status":"proved","note":"","genome":"82495be50c04e25b463d443ce2082c4539ff28e33d072628013d6c75a3ff7d3a575d573a7dffa31b6c3d012826073de328ff39892c08e23c44b2465be2223f41","check_seconds":199.9,"check_host":["local"],"also_checked_on_mac_mini":["ProofOfLife.Organisms.World30"],"axioms":["propext","Quot.sound"]},{"id":"world-30","rule":"noheads","kind":"lineage","theorem":"ProofOfLife.World30.lineage_closed","statement":"(\u2200 B, run (P ++ B) = P ++ P.reverse) \u2227 (\u2200 B, run (P.reverse ++ B) = P.reverse ++ P)","module":"ProofOfLife.Organisms.World30Lineage","status":"proved","note":"","genome":"82495be50c04e25b463d443ce2082c4539ff28e33d072628013d6c75a3ff7d3a575d573a7dffa31b6c3d012826073de328ff39892c08e23c44b2465be2223f41","check_seconds":46.5,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-32","rule":"noheads","kind":"exact","theorem":"ProofOfLife.World32.mirror","statement":"\u2200 B : Vector UInt8 64, run (P ++ B) = P ++ P.reverse","module":"ProofOfLife.Organisms.World32","status":"proved","note":"","genome":"ff7f7f7b815b3c3b387ca7ffc27d3b84367e748cf52c165d84797d984bce2c10e66193493c86815bd50e8a6df53c913ba8fb062c580e3e780efe0ee40e67c3c3","check_seconds":169.4,"check_host":["local"],"also_checked_on_mac_mini":["ProofOfLife.Organisms.World32"],"axioms":["propext","Quot.sound"]},{"id":"world-32","rule":"noheads","kind":"lineage","theorem":"ProofOfLife.World32.lineage_closed","statement":"(\u2200 B, run (P ++ B) = P ++ P.reverse) \u2227 (\u2200 B, run (P.reverse ++ B) = P.reverse ++ P)","module":"ProofOfLife.Organisms.World32Lineage","status":"proved","note":"","genome":"ff7f7f7b815b3c3b387ca7ffc27d3b84367e748cf52c165d84797d984bce2c10e66193493c86815bd50e8a6df53c913ba8fb062c580e3e780efe0ee40e67c3c3","check_seconds":67.1,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-33","rule":"noheads","kind":"exact","theorem":"ProofOfLife.World33.mirror","statement":"\u2200 B : Vector UInt8 64, run (P ++ B) = P ++ P.reverse","module":"ProofOfLife.Organisms.World33","status":"proved","note":"","genome":"3e0b675b3c3a3c2c3a3bcf593a0a3b3b593a3a3a3a3d5b2e2c3b7ba9963e5d3e3f3b7b3b2c2c3b7b3b3f3e5d3e963b7b3b2c2e5b5b3a3a0c357b733b2235350b","check_seconds":582.1,"check_host":["local"],"axioms":["propext","Quot.sound"]},{"id":"world-33","rule":"noheads","kind":"lineage","theorem":"ProofOfLife.World33.lineage_closed","statement":"(\u2200 B, run (P ++ B) = P ++ P.reverse) \u2227 (\u2200 B, run (P.reverse ++ B) = P.reverse ++ P)","module":"ProofOfLife.Organisms.World33Lineage","status":"proved","note":"","genome":"3e0b675b3c3a3c2c3a3bcf593a0a3b3b593a3a3a3a3d5b2e2c3b7ba9963e5d3e3f3b7b3b2c2c3b7b3b3f3e5d3e963b7b3b2c2e5b5b3a3a0c357b733b2235350b","check_seconds":661.3,"check_host":["local"],"axioms":["propext","Quot.sound"]},{"id":"world-37","rule":"noheads","kind":"exact","theorem":"ProofOfLife.World37.mirror","statement":"\u2200 B : Vector UInt8 64, run (P ++ B) = P ++ P.reverse","module":"ProofOfLife.Organisms.World37","status":"proved","note":"","genome":"422e5be73c0493d6033a9989442c3d7d24e40122c1d1c1ec2201a9a0e470245d5d2470e4a0017c22ecc1d1c12201e4247d3d2c4489993a03d693043ce75b2e42","check_seconds":162.3,"check_host":["local"],"also_checked_on_mac_mini":["ProofOfLife.Organisms.World37"],"axioms":["propext","Quot.sound"]},{"id":"world-37","rule":"noheads","kind":"lineage","theorem":"ProofOfLife.World37.lineage_closed","statement":"(\u2200 B, run (P ++ B) = P ++ P.reverse) \u2227 (\u2200 B, run (P.reverse ++ B) = P.reverse ++ P)","module":"ProofOfLife.Organisms.World37Lineage","status":"proved","note":"","genome":"422e5be73c0493d6033a9989442c3d7d24e40122c1d1c1ec2201a9a0e470245d5d2470e4a0017c22ecc1d1c12201e4247d3d2c4489993a03d693043ce75b2e42","check_seconds":45.5,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-38","rule":"noheads","kind":"exact","theorem":"ProofOfLife.World38.mirror","statement":"\u2200 B : Vector UInt8 64, run (P ++ B) = P ++ P.reverse","module":"ProofOfLife.Organisms.World38","status":"proved","note":"","genome":"df06df067b1b61e35b0b7d3cac315c2c62b0f1fa68530ca868dbfa52f1dcb05db0dcf152fadb68a82e0c68faf1b06232572c57313c7d5be3614a1b387cad7b87","check_seconds":205.8,"check_host":["local"],"also_checked_on_mac_mini":["ProofOfLife.Organisms.World38"],"axioms":["propext","Quot.sound"]},{"id":"world-38","rule":"noheads","kind":"lineage","theorem":"ProofOfLife.World38.lineage_closed","statement":"(\u2200 B, run (P ++ B) = P ++ P.reverse) \u2227 (\u2200 B, run (P.reverse ++ B) = P.reverse ++ P)","module":"ProofOfLife.Organisms.World38Lineage","status":"proved","note":"","genome":"df06df067b1b61e35b0b7d3cac315c2c62b0f1fa68530ca868dbfa52f1dcb05db0dcf152fadb68a82e0c68faf1b06232572c57313c7d5be3614a1b387cad7b87","check_seconds":54.7,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-41","rule":"noheads","kind":"exact","theorem":"ProofOfLife.World41.mirror","statement":"\u2200 B : Vector UInt8 64, run (P ++ B) = P ++ P.reverse","module":"ProofOfLife.Organisms.World41","status":"proved","note":"","genome":"5b3cd72c3594f18a6f7f22047c7cb17d5e9859759ba495c57520be3a98ca975d5d5eca983a592075c595a4957559985e7d427c5c04227fadf8f194352cd73c5b","check_seconds":178.8,"check_host":["local"],"also_checked_on_mac_mini":["ProofOfLife.Organisms.World41"],"axioms":["propext","Quot.sound"]},{"id":"world-41","rule":"noheads","kind":"lineage","theorem":"ProofOfLife.World41.lineage_closed","statement":"(\u2200 B, run (P ++ B) = P ++ P.reverse) \u2227 (\u2200 B, run (P.reverse ++ B) = P.reverse ++ P)","module":"ProofOfLife.Organisms.World41Lineage","status":"proved","note":"","genome":"5b3cd72c3594f18a6f7f22047c7cb17d5e9859759ba495c57520be3a98ca975d5d5eca983a592075c595a4957559985e7d427c5c04227fadf8f194352cd73c5b","check_seconds":41.6,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-42","rule":"noheads","kind":"exact","theorem":"ProofOfLife.World42.mirror","statement":"\u2200 B : Vector UInt8 64, run (P ++ B) = P ++ P.reverse","module":"ProofOfLife.Organisms.World42","status":"proved","note":"","genome":"8383887bff1519ee166ad0a61b5b3c69a3547a2a2a7d266c2c88885de5f388882c6c267d2a2a7a54a3693c5b1b1ca31bd23b3f7b66e9b23ee96a3c7b6b07fb7d","check_seconds":237.8,"check_host":["local"],"also_checked_on_mac_mini":["ProofOfLife.Organisms.World42"],"axioms":["propext","Quot.sound"]},{"id":"world-42","rule":"noheads","kind":"lineage","theorem":"ProofOfLife.World42.lineage_closed","statement":"(\u2200 B, run (P ++ B) = P ++ P.reverse) \u2227 (\u2200 B, run (P.reverse ++ B) = P.reverse ++ P)","module":"ProofOfLife.Organisms.World42Lineage","status":"proved","note":"","genome":"8383887bff1519ee166ad0a61b5b3c69a3547a2a2a7d266c2c88885de5f388882c6c267d2a2a7a54a3693c5b1b1ca31bd23b3f7b66e9b23ee96a3c7b6b07fb7d","check_seconds":68.8,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-46","rule":"noheads","kind":"exact","theorem":"ProofOfLife.World46.mirror","statement":"\u2200 B : Vector UInt8 64, run (P ++ B) = P ++ P.reverse","module":"ProofOfLife.Organisms.World46","status":"proved","note":"","genome":"b67b41c0a63b3b3b7970425bb6023d272e7a90d3b5e1e47bdf3ec61d3d475d3d9e1d7f3ee27be4e1d0f72c7a2e273dc53b5bb0d98c3b3d3bb23b43db567b0636","check_seconds":227.8,"check_host":["local"],"also_checked_on_mac_mini":["ProofOfLife.Organisms.World46"],"axioms":["propext","Quot.sound"]},{"id":"world-46","rule":"noheads","kind":"lineage","theorem":"ProofOfLife.World46.lineage_closed","statement":"(\u2200 B, run (P ++ B) = P ++ P.reverse) \u2227 (\u2200 B, run (P.reverse ++ B) = P.reverse ++ P)","module":"ProofOfLife.Organisms.World46Lineage","status":"proved","note":"","genome":"b67b41c0a63b3b3b7970425bb6023d272e7a90d3b5e1e47bdf3ec61d3d475d3d9e1d7f3ee27be4e1d0f72c7a2e273dc53b5bb0d98c3b3d3bb23b43db567b0636","check_seconds":70.4,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-48","rule":"noheads","kind":"exact","theorem":"ProofOfLife.World48.mirror","statement":"\u2200 B : Vector UInt8 64, run (P ++ B) = P ++ P.reverse","module":"ProofOfLife.Organisms.World48","status":"proved","note":"","genome":"a3a3fea4712c857e7ea87e7ec2097e2f7e7e2c3c7eec3d7f2c354d8be735f65b53e0556f36f07d3c542c055d052c543c7df036e055e04c5bf69074ce013d7b79","check_seconds":550.7,"check_host":["local"],"axioms":["propext","Quot.sound"]},{"id":"world-48","rule":"noheads","kind":"lineage","theorem":"ProofOfLife.World48.lineage_closed","statement":"(\u2200 B, run (P ++ B) = P ++ P.reverse) \u2227 (\u2200 B, run (P.reverse ++ B) = P.reverse ++ P)","module":"ProofOfLife.Organisms.World48Lineage","status":"proved","note":"","genome":"a3a3fea4712c857e7ea87e7ec2097e2f7e7e2c3c7eec3d7f2c354d8be735f65b53e0556f36f07d3c542c055d052c543c7df036e055e04c5bf69074ce013d7b79","check_seconds":108.3,"check_host":["local"],"axioms":["propext","Quot.sound"]},{"id":"world-49","rule":"noheads","kind":"exact","theorem":"ProofOfLife.World49.mirror","statement":"\u2200 B : Vector UInt8 64, run (P ++ B) = P ++ P.reverse","module":"ProofOfLife.Organisms.World49","status":"proved","note":"","genome":"de5b7b2e4eec893e3003646d0cd78f39ed7a1373304e30c3732313857a6aba5d5ded6a7a85132373c3304e3073137aed39b2d70ccd6403303e89ec4e2e7b5bde","check_seconds":182.6,"check_host":["local"],"also_checked_on_mac_mini":["ProofOfLife.Organisms.World49"],"axioms":["propext","Quot.sound"]},{"id":"world-49","rule":"noheads","kind":"lineage","theorem":"ProofOfLife.World49.lineage_closed","statement":"(\u2200 B, run (P ++ B) = P ++ P.reverse) \u2227 (\u2200 B, run (P.reverse ++ B) = P.reverse ++ P)","module":"ProofOfLife.Organisms.World49Lineage","status":"proved","note":"","genome":"de5b7b2e4eec893e3003646d0cd78f39ed7a1373304e30c3732313857a6aba5d5ded6a7a85132373c3304e3073137aed39b2d70ccd6403303e89ec4e2e7b5bde","check_seconds":45.0,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-52","rule":"noheads","kind":"exact","theorem":"ProofOfLife.World52.mirror","statement":"\u2200 B : Vector UInt8 64, run (P ++ B) = P ++ P.reverse","module":"ProofOfLife.Organisms.World52","status":"proved","note":"","genome":"3d3d723f715b723c2c7d71a03fdda064da3b393bc03b633b3bc03b3bf1393b3b5d3b3b39f13b3bc03b3b633bc03b393bda64a0dd3fa0717d2c3c725b713f722e","check_seconds":156.3,"check_host":["local"],"also_checked_on_mac_mini":["ProofOfLife.Organisms.World52"],"axioms":["propext","Quot.sound"]},{"id":"world-52","rule":"noheads","kind":"lineage","theorem":"ProofOfLife.World52.lineage_closed","statement":"(\u2200 B, run (P ++ B) = P ++ P.reverse) \u2227 (\u2200 B, run (P.reverse ++ B) = P.reverse ++ P)","module":"ProofOfLife.Organisms.World52Lineage","status":"proved","note":"","genome":"3d3d723f715b723c2c7d71a03fdda064da3b393bc03b633b3bc03b3bf1393b3b5d3b3b39f13b3bc03b3b633bc03b393bda64a0dd3fa0717d2c3c725b713f722e","check_seconds":51.0,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-55","rule":"noheads","kind":"exact","theorem":"ProofOfLife.World55.mirror","statement":"\u2200 B : Vector UInt8 64, run (P ++ B) = P ++ P.reverse","module":"ProofOfLife.Organisms.World55","status":"proved","note":"","genome":"5baaaa01010101012c5b3c2c7d5da6a68da6aaa6aa86a6a68d6da6bb2bad5d5dadbabba66d8da2a6d8b0a6aaa98da6a6cb7d3c2c2c5b5b5b5b015b5b5b2c2c3c","check_seconds":350.6,"check_host":["local"],"also_checked_on_mac_mini":["ProofOfLife.Organisms.World55"],"axioms":["propext","Quot.sound"]},{"id":"world-55","rule":"noheads","kind":"lineage","theorem":"ProofOfLife.World55.lineage_closed","statement":"\u2200 B : Vector UInt8 64, run (P.reverse ++ B) = P.reverse ++ P","module":"","status":"failed","note":"not proved: the abstract run of P.reverse ++ [unknown x 64] gives up at step 32 (its loop test reads partner byte 62 = tape cell 126 before overwriting it); a case split on that byte (nonzero-unknown / known 0) also gives up later. Empirically the reverse strand copies exactly for 500/500 random partners (bff.py). The forward theorem ProofOfLife.World55.mirror IS proved.","genome":"5baaaa01010101012c5b3c2c7d5da6a68da6aaa6aa86a6a68d6da6bb2bad5d5dadbabba66d8da2a6d8b0a6aaa98da6a6cb7d3c2c2c5b5b5b5b015b5b5b2c2c3c","check_seconds":null},{"id":"world-56","rule":"noheads","kind":"exact","theorem":"ProofOfLife.World56.mirror","statement":"\u2200 B : Vector UInt8 64, run (P ++ B) = P ++ P.reverse","module":"ProofOfLife.Organisms.World56","status":"proved","note":"","genome":"795b3d3cabc7662c7d5d50553e553e7d9b0c0c50223e553e55505d7d2c66662c2cc9662c7d5d50553e55b37d9b0c0c9b7d3e553e55505d7d2c66c7ab3c3d5b32","check_seconds":130.1,"check_host":["local"],"also_checked_on_mac_mini":["ProofOfLife.Organisms.World56"],"axioms":["propext","Quot.sound"]},{"id":"world-56","rule":"noheads","kind":"lineage","theorem":"ProofOfLife.World56.lineage_closed","statement":"(\u2200 B, run (P ++ B) = P ++ P.reverse) \u2227 (\u2200 B, run (P.reverse ++ B) = P.reverse ++ P)","module":"ProofOfLife.Organisms.World56Lineage","status":"proved","note":"","genome":"795b3d3cabc7662c7d5d50553e553e7d9b0c0c50223e553e55505d7d2c66662c2cc9662c7d5d50553e55b37d9b0c0c9b7d3e553e55505d7d2c66c7ab3c3d5b32","check_seconds":44.9,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-58","rule":"noheads","kind":"exact","theorem":"ProofOfLife.World58.mirror","statement":"\u2200 B : Vector UInt8 64, run (P ++ B) = P ++ P.reverse","module":"ProofOfLife.Organisms.World58","status":"proved","note":"","genome":"5b7b12c1172e0e9a11118140f573e93e3d537a1f48d8489a1fafffd853e03d5d5d3de028d87aaf1f9a48d8481f94533d3ee973f5bc8111119a0e2e3a7e127b5b","check_seconds":155.3,"check_host":["local"],"also_checked_on_mac_mini":["ProofOfLife.Organisms.World58"],"axioms":["propext","Quot.sound"]},{"id":"world-58","rule":"noheads","kind":"lineage","theorem":"ProofOfLife.World58.lineage_closed","statement":"(\u2200 B, run (P ++ B) = P ++ P.reverse) \u2227 (\u2200 B, run (P.reverse ++ B) = P.reverse ++ P)","module":"ProofOfLife.Organisms.World58Lineage","status":"proved","note":"","genome":"5b7b12c1172e0e9a11118140f573e93e3d537a1f48d8489a1fafffd853e03d5d5d3de028d87aaf1f9a48d8481f94533d3ee973f5bc8111119a0e2e3a7e127b5b","check_seconds":38.8,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-1005","rule":"heads","kind":"exact","theorem":"ProofOfLife.World1005.copy","statement":"\u2200 B : Vector UInt8 64, runHeads (P ++ B) = P ++ P","module":"ProofOfLife.Organisms.World1005","status":"proved","note":"","genome":"12825b2c2cd5f17b1bde3c2e7f5d5d9d12825b2c2cd5f17b1bde3c2e7f5d5d9d12825b2c2cd5f17b1bde3c2e7f5d5d9d12825b2c2cd5f17b1bde3c2e7f5d5d9d","check_seconds":264.5,"check_host":["local"],"also_checked_on_mac_mini":["ProofOfLife.Organisms.World1005"],"axioms":["propext","Quot.sound"]},{"id":"world-1009","rule":"heads","kind":"exact","theorem":"ProofOfLife.World1009.copy","statement":"\u2200 B : Vector UInt8 64, runHeads (P ++ B) = P ++ P","module":"ProofOfLife.Organisms.World1009","status":"proved","note":"","genome":"ffc0537527d47b2c604ee4aed25b4f03d9d9fe847b1284010e313c2c1b6dfa72e5f1afbf2c5dff2cc1b42cd002b4e1b429b4e32c75b85c7528c1d8c0d621df86","check_seconds":355.1,"check_host":["local"],"also_checked_on_mac_mini":["ProofOfLife.Organisms.World1009"],"axioms":["propext","Quot.sound"]},{"id":"world-1014","rule":"heads","kind":"exact","theorem":"ProofOfLife.World1014.copy","statement":"\u2200 B : Vector UInt8 64, runHeads (P ++ B) = P ++ P","module":"ProofOfLife.Organisms.World1014","status":"proved","note":"","genome":"bd7d7dfaceff59623e3eebc87d7dfa2cff59626259b8e9fc5c3eeb2c2c5b8f9190416262593232b1ff141d1df3bd907d3eeb2c2c5daa35aac74890427a7b7bbd","check_seconds":147.5,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-1016","rule":"heads","kind":"exact","theorem":"ProofOfLife.World1016.copy","statement":"\u2200 B : Vector UInt8 64, runHeads (P ++ B) = P ++ P","module":"ProofOfLife.Organisms.World1016","status":"proved","note":"","genome":"3f804382bd9882dc835c5b3e8383836d3d3d485c72997272727372a9b05e2c3f2c1ed42001b3b31f7dbd747608d9d6015d987d4565ec6521b64ee7e7d92c5d5d","check_seconds":131.5,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-1021","rule":"heads","kind":"exact","theorem":"ProofOfLife.World1021.copy","statement":"\u2200 B : Vector UInt8 64, runHeads (P ++ B) = P ++ P","module":"ProofOfLife.Organisms.World1021","status":"proved","note":"","genome":"3fff70d5afb6f201b0afafafafaff7fcd7af26af9b5bd5d5d53ed5d5d571d59c4f7dd5d6d5d5d5d52c5ddcd143c69d4491d58568ff500c9b5f7e257d2c7e836f","check_seconds":138.3,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-1027","rule":"heads","kind":"exact","theorem":"ProofOfLife.World1027.copy","statement":"\u2200 B : Vector UInt8 64, runHeads (P ++ B) = P ++ P","module":"ProofOfLife.Organisms.World1027","status":"proved","note":"","genome":"ffbf2cf32f0e29612d5b2c2c4a4a4b4b4a4a83838381f3f32c731d1b1d3ca41c1c1dab361cab1c501d73251d24266e25730d8a7b2c02ac0e290d1d5dffbf2500","check_seconds":170.6,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-1028","rule":"heads","kind":"exact","theorem":"ProofOfLife.World1028.copy","statement":"\u2200 B : Vector UInt8 64, runHeads (P ++ B) = P ++ P","module":"ProofOfLife.Organisms.World1028","status":"proved","note":"","genome":"3e7d7d7d2e7c791b3e791b8335b0465568a43f51acdf76485bee6dc1f020eaca8417705cd2c24f1b7d3e096767f35a1b10afaf2c5d79266dc17e20eaca841770","check_seconds":147.4,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-50","rule":"noheads","kind":"achilles","theorem":"ProofOfLife.World50.achilles","statement":"\u2200 B : Vector UInt8 64, B[63] \u2260 0 \u2192 run (P ++ B) = P ++ P.reverse","module":"ProofOfLife.Organisms.World50Achilles","status":"proved","note":"","genome":"01c8d8019d3c015b883e8cad797b017a0ae32e2ebd01e38c57047a5de05d7b047b8c978c7b047a2be05d7a04578c6f01bd2e2ee30a7a017b79ad8c3e885b3c01","check_seconds":52.1,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-50","rule":"noheads","kind":"killer","theorem":"ProofOfLife.World50.killer","statement":"run (P ++ Bk) \u2260 P ++ P.reverse","module":"ProofOfLife.Organisms.World50Killer","status":"proved","note":"differs at byte 65; killer_code: child byte 65 != P[62] (opcode)","genome":"01c8d8019d3c015b883e8cad797b017a0ae32e2ebd01e38c57047a5de05d7b047b8c978c7b047a2be05d7a04578c6f01bd2e2ee30a7a017b79ad8c3e885b3c01","check_seconds":18.8,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-1006","rule":"heads","kind":"killer","theorem":"ProofOfLife.World1006.killer","statement":"runHeads (P ++ Bk) \u2260 P ++ P","module":"ProofOfLife.Organisms.World1006Killer","status":"proved","note":"differs at byte 67; killer_code: child byte 67 != P[3] (opcode)","genome":"40800a5b0a5e990a2c7d3e2c3d3d2c497fff97807e737e28844a5da90a92eb588899864a5da90a92eb588844864a72e3e3342c2c692aff2c6c3e44ff2a000000","check_seconds":22.5,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-1007","rule":"heads","kind":"killer","theorem":"ProofOfLife.World1007.killer","statement":"runHeads (P ++ Bk) \u2260 P ++ P","module":"ProofOfLife.Organisms.World1007Killer","status":"proved","note":"differs at byte 68; killer_code: child byte 68 != P[4] (opcode)","genome":"40005c1b5b165b2c5e7d5c52fbf8db3e5d413dff5cf80001b226783ab43a8406620040ffff50045600002d001d1b1d015d6529893fb30424502d3f198bb3e77d","check_seconds":22.5,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-1008","rule":"heads","kind":"killer","theorem":"ProofOfLife.World1008.killer","statement":"runHeads (P ++ Bk) \u2260 P ++ P","module":"ProofOfLife.Organisms.World1008Killer","status":"proved","note":"differs at byte 81; killer_code: child byte 81 != P[17] (opcode)","genome":"407f5959593bcb91f4e2212121212119ce5b0000000000ce5b005b593d7d57cc81fb582c3e5dfff0bf03d56aa1e3012de9fe9a444c69d54f5d7c0126b70301ff","check_seconds":22.5,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-1011","rule":"heads","kind":"killer","theorem":"ProofOfLife.World1011.killer","statement":"runHeads (P ++ Bk) \u2260 P ++ P","module":"ProofOfLife.Organisms.World1011Killer","status":"proved","note":"differs at byte 71; killer_code: child byte 71 != P[7] (opcode)","genome":"febebebce1e1e45b5401bce172d1d8f93c87955ce2e2ccfebe86cd060436bde288e145e0e4bbe3bcc7e1f9b3830ad154037b77542c5cbc5dcd333caa95dfcefd","check_seconds":20.2,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-1012","rule":"heads","kind":"killer","theorem":"ProofOfLife.World1012.killer","statement":"runHeads (P ++ Bk) \u2260 P ++ P","module":"ProofOfLife.Organisms.World1012Killer","status":"proved","note":"differs at byte 68; killer_code: child byte 68 != P[4] (opcode)","genome":"c0ffff005b5b01e2387d8e15de2c3e518686875d3a3981ffffff38002d262f09257fd32f0d5de601db3103d57c535201343e02247d2b3e6427af8b4dba013d7f","check_seconds":20.2,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-1013","rule":"heads","kind":"killer","theorem":"ProofOfLife.World1013.killer","statement":"runHeads (P ++ Bk) \u2260 P ++ P","module":"ProofOfLife.Organisms.World1013Killer","status":"proved","note":"differs at byte 68; killer_code: child byte 68 != P[4] (opcode)","genome":"ff3f17385b7878a6285778de78787878787878787878787878ffa7782c2a2cfe3d3c5f7b28a48ffa00fa283c3e5d6efdfdb96c1d000000000000000000000000","check_seconds":27.8,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-1024","rule":"heads","kind":"killer","theorem":"ProofOfLife.World1024.killer","statement":"runHeads (P ++ Bk) \u2260 P ++ P","module":"ProofOfLife.Organisms.World1024Killer","status":"proved","note":"differs at byte 66; killer_code: child byte 66 != P[2] (opcode)","genome":"fd1d5b918f929229292940297b29cb2983293c294b2c5d3fff292c38db292929fd1d5b918f929229292940297b29cb2983293c294b2c5d3fff292c38db292929","check_seconds":18.5,"check_host":["mac_mini"],"axioms":["propext","Quot.sound"]},{"id":"world-1004","rule":"heads","kind":"killer","theorem":null,"statement":null,"module":null,"check_seconds":null,"status":"skipped","note":"no killer partner known (survival 1.0)","genome":"bc7e3ed67c3f8c8c3edbdb3c3b2e438c3fbb3e583d696611a143fffff4fe5b95412e2cfe35cc3c7b5a3aaf3a1ff7ff5dff935d2d3f353535ffff935dbc7ebcf9"},{"id":"world-1022","rule":"heads","kind":"killer","theorem":null,"statement":null,"module":null,"check_seconds":null,"status":"skipped","note":"no killer partner known (survival 1.0)","genome":"5b9b904b3c7b2cb49bc0f9c0060625fe2424f4f42323235d255b5b01010101010101010101010101010101010101010101010101010101010101010101010101"},{"id":"world-1403","rule":"heads","kind":"killer","theorem":null,"statement":null,"module":null,"check_seconds":null,"status":"skipped","note":"no killer partner known (survival 1.0)","genome":"fc3b3caf2c25251c1d1d1d1d1d1d1d1d091d1d1d1d1d1d3aa346055b20022cfb5b2c7b7afc3b3c202c257a5d032c542106fdfd2c2c052c692c2c055b031e540f"}],"full_build_mac_mini":{"result":"Build completed successfully (exit 0)","jobs":74,"wall_seconds":262.6,"note":"single whole-project `lake build` on the Mac mini; built the 8 modules it lacked, all others up to date from its own earlier builds","axioms_all_60":"[propext, Quot.sound]","log":"logs/mac_mini/fullbuild.log"},"verify":{"host":"Mac mini (Apple M4), from an empty .lake, one lake build per module (the six birth-certificate modules were built together as dependencies)","modules":68,"modules_ok":68,"failed":[],"total_seconds":2646,"atlas_ok":true,"module_seconds":{"ProofOfLife.Semantics":0,"ProofOfLife.Abstract":1,"ProofOfLife.Organisms.PaperFig4":46,"ProofOfLife.Organisms.PaperFig4Lineage":1,"ProofOfLife.Organisms.World10":48,"ProofOfLife.Organisms.World1005":56,"ProofOfLife.Organisms.World1006Killer":17,"ProofOfLife.Organisms.World1007Killer":17,"ProofOfLife.Organisms.World1008Killer":17,"ProofOfLife.Organisms.World1009":48,"ProofOfLife.Organisms.World1011Killer":17,"ProofOfLife.Organisms.World1012Killer":17,"ProofOfLife.Organisms.World1013Killer":24,"ProofOfLife.Organisms.World1014":60,"ProofOfLife.Organisms.World1016":49,"ProofOfLife.Organisms.World1021":53,"ProofOfLife.Organisms.World1024Killer":18,"ProofOfLife.Organisms.World1027":66,"ProofOfLife.Organisms.World1028":57,"ProofOfLife.Organisms.World10Lineage":44,"ProofOfLife.Organisms.World11":82,"ProofOfLife.Organisms.World11Lineage":100,"ProofOfLife.Organisms.World12":48,"ProofOfLife.Organisms.World12Lineage":45,"ProofOfLife.Organisms.World15":49,"ProofOfLife.Organisms.World15Lineage":58,"ProofOfLife.Organisms.World2":36,"ProofOfLife.Organisms.World29":38,"ProofOfLife.Organisms.World29Lineage":0,"ProofOfLife.Organisms.World2Lineage":41,"ProofOfLife.Organisms.World30":0,"ProofOfLife.Organisms.World30Lineage":40,"ProofOfLife.Organisms.World32":40,"ProofOfLife.Organisms.World32Lineage":58,"ProofOfLife.Organisms.World33":79,"ProofOfLife.Organisms.World33Lineage":74,"ProofOfLife.Organisms.World37":38,"ProofOfLife.Organisms.World37Lineage":39,"ProofOfLife.Organisms.World38":43,"ProofOfLife.Organisms.World38Lineage":51,"ProofOfLife.Organisms.World41":38,"ProofOfLife.Organisms.World41Lineage":38,"ProofOfLife.Organisms.World42":48,"ProofOfLife.Organisms.World42Lineage":55,"ProofOfLife.Organisms.World46":44,"ProofOfLife.Organisms.World46Lineage":57,"ProofOfLife.Organisms.World48":68,"ProofOfLife.Organisms.World48Lineage":43,"ProofOfLife.Organisms.World49":38,"ProofOfLife.Organisms.World49Lineage":37,"ProofOfLife.Organisms.World50Achilles":43,"ProofOfLife.Organisms.World50Killer":17,"ProofOfLife.Organisms.World52":41,"ProofOfLife.Organisms.World52Lineage":40,"ProofOfLife.Organisms.World55":60,"ProofOfLife.Organisms.World56":37,"ProofOfLife.Organisms.World56Lineage":37,"ProofOfLife.Organisms.World58":38,"ProofOfLife.Organisms.World58Lineage":38,"ProofOfLife.Organisms.World7":38,"ProofOfLife.Organisms.World7Lineage":37,"ProofOfLife.Birth52.Certificate":95,"ProofOfLife.Birth52.Collision":0,"ProofOfLife.Birth52.Data":1,"ProofOfLife.Birth52.Newborn":0,"ProofOfLife.Birth52.NewbornRev":0,"ProofOfLife.Birth52.ParentA":0,"ProofOfLife.Birth52.ParentB":0}}},"birth":{"seed":52,"epoch_index":5857,"pair":30117,"pairs_total":65536,"left_slot":65224,"right_slot":65971,"mutations":0,"A":"5b5b5b2e5b085b7228dd643ffda027711e7dfe5b5b725b72b54edc3c7d731e2c7113277dc91e2c711327c9a019fdc23f02dd63dda62841a009a60064350100da","B":"5d5d3c3b9d3b3b393ff13c3b3c3b3cc03c3b3c3b7163003b000019ca9584843b2c19962c3ce13d52caed3c3cbc4b7b1e3d3b3cc2dea6ff5b00013d3c72a69ed1","A_out":"5b5b5b2e5b085b7228dd643ffda027711e7dfe5b5b725b72b54edc3c7d731e2c712c1e737d3cdc4eb5725b725b5bfe7d1e7127a0fd3f64dd28725b085b2e5b5b","C":"5b2e723f715b723c2c7d71a03fdda064da3b393bc03b633b3bc03b3bf1393b3b5d3b3b39f13b3bc03b3b633bc03b393bda64a0dd3fa0717d2c3c725b713f722e","killer_A":"7942bdf22106f0847762f0f3cb4d764dc7072051159a0f89f2c6dacae344bb311245fd6f84df9ad7c5b3d076ac0e8f53a7356c88913f20f6f72db022d24d0a96","killer_B":"dad43c1617c1a98e78129e0327371065d095864f15ada0b846c1c0ebc5348adc799adf849bad05d4a10ac0441eaaeeb4b48efa0b1f0abd80e998a35aba5ea0bd","matches_saved_soup":true,"first_epoch":5858,"epochs_to_90k":49,"count_90k":91764}}</script>
+<script>
+(() => {
+"use strict";
+const D = JSON.parse(document.getElementById("proof-data").textContent);
+const L = D.lean || null;
+const ORG = Object.fromEntries(D.organisms.map((o) => [o.id, o]));
+const fmt = (n) => n.toLocaleString("en-US");
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const OPC = { 60: "move", 62: "move", 123: "move", 125: "move", 43: "arith", 45: "arith", 46: "copy", 44: "copy", 91: "loop", 93: "loop" };
+const hex2 = (h) => Uint8Array.from(h.match(/../g).map((x) => parseInt(x, 16)));
+const U = -1, NZ = -2;
+const glyph = (b) => (b === U ? "?" : b === NZ ? "≠0" : OPC[b] ? String.fromCharCode(b) : b === 0 ? "0" : "·");
+const cls = (b) => (b === U ? "u" : b === NZ ? "nz" : OPC[b] ? "o-" + OPC[b] : b === 0 ? "o-zero" : "f");
+
+// ------------------------------------------------------------ Lean statuses
+// Map each organism to its certificates. Only the Lean report can say "proved".
+const certs = {};
+if (L && Array.isArray(L.entries)) {
+  for (const e of L.entries) (certs[e.id] = certs[e.id] || []).push(e);
+}
+const has = (id, kind) => (certs[id] || []).some((c) => c.kind === kind && c.status === "proved");
+function status(o) {
+  if (!L) return { key: "pending", label: "awaiting Lean" };
+  if (has(o.id, "exact")) return { key: "proved", label: "∀ partners" };
+  if (has(o.id, "achilles")) return { key: "heel", label: "one byte ≠ 0" };
+  if (has(o.id, "killer")) return { key: "killed", label: "killer" };
+  return { key: "none", label: "no theorem" };
+}
+
+// ------------------------------------------------------------ stats
+const all = D.organisms, A = all.filter((o) => o.rule === "noheads"), B = all.filter((o) => o.rule === "heads");
+const nProved = all.filter((o) => has(o.id, "exact")).length;
+const nLineage = all.filter((o) => has(o.id, "lineage")).length;
+const nHeel = all.filter((o) => has(o.id, "achilles")).length;
+const nKill = all.filter((o) => has(o.id, "killer")).length;
+// kernel time: our own clean, serial rebuild when available; otherwise the agent's (loaded, upper-bound) sum
+const secs = L && ((L.verify && L.verify.total_seconds) || L.total_module_check_seconds);
+document.getElementById("stats").innerHTML = (L ? [
+  [String(nProved), `organisms proved to copy themselves exactly into every one of the 256<sup>64</sup> possible partners`],
+  [String(nLineage), `lineages proved closed: + makes −, − makes + again, whatever they meet`],
+  [L.entries.some((c) => c.kind === "birth" && c.status === "proved") ? "1" : "0", `birth certified: two non-replicators collide, a perfect replicator comes out`],
+  L.verify ? [`${fmt(Math.round(L.verify.total_seconds))} s`, `to re-check everything from scratch on a Mac mini; no native_decide, no sorry, standard axioms only`]
+           : [String(Object.values(L.totals).reduce((a, t) => a + (t.proved || 0), 0)), `theorems, all checked by Lean’s kernel; no native_decide, no sorry, standard axioms only`],
+] : [["—", "Lean report not built yet"], ["—", ""], ["—", ""], ["—", ""]]).map(([b, s]) => `<div class="stat"><b>${b}</b><span>${s}</span></div>`).join("");
+
+// ------------------------------------------------------------ abstract interpreter (same rules as the Lean one)
+function AM(tape, heads) {
+  this.t = tape.slice(); this.pos = 0; this.h0 = 0; this.h1 = 0; this.step = 0; this.done = false; this.stuck = null; this.tests = 0;
+  if (heads) { this.h0 = this.t[0] % 128; this.h1 = this.t[1] % 128; this.pos = 2; }
+}
+const unk = (v) => v === U || v === NZ;
+AM.prototype.next = function () {
+  if (this.done) return null;
+  const t = this.t; this.h0 &= 127; this.h1 &= 127;
+  const c = t[this.pos]; let ev = { pos: this.pos };
+  if (unk(c)) { this.stuck = { reason: "would run a partner byte as an instruction", at: this.pos }; this.done = true; return ev; }
+  switch (c) {
+    case 60: this.h0--; break; case 62: this.h0++; break; case 123: this.h1--; break; case 125: this.h1++; break;
+    case 43: case 45: t[this.h0] = unk(t[this.h0]) ? U : (t[this.h0] + (c === 43 ? 1 : 255)) & 255; break;
+    case 46: ev.write = this.h1; t[this.h1] = t[this.h0]; break;
+    case 44: ev.write = this.h0; t[this.h0] = t[this.h1]; break;
+    case 91: case 93: {
+      const v = t[this.h0]; ev.test = this.h0;
+      if (v === U) { ev.bad = true; this.stuck = { reason: "the loop test reads a partner byte that could be zero or not", at: this.h0 }; this.done = true; return ev; }
+      this.tests++;
+      const zero = v === 0;
+      if ((c === 91 && zero) || (c === 93 && !zero)) {
+        const dir = c === 91 ? 1 : -1; let d = 1; this.pos += dir;
+        while (this.pos >= 0 && this.pos < 128 && d > 0) {
+          const x = t[this.pos];
+          if (unk(x)) { ev.bad = true; this.stuck = { reason: "a bracket search would have to read a partner byte", at: this.pos }; this.done = true; return ev; }
+          if (x === (c === 91 ? 93 : 91)) d--; if (x === (c === 91 ? 91 : 93)) d++;
+          this.pos += dir;
+        }
+        this.pos -= dir;
+        if (d !== 0) { if (c === 91) this.pos = 128; else { this.done = true; this.step++; return ev; } }
+      }
+      break;
+    }
+  }
+  this.step++; this.pos++;
+  if (this.pos >= 128 || this.step >= 8192) this.done = true;
+  return ev;
+};
+
+// ------------------------------------------------------------ birth
+const BI = D.birth;
+if (BI) {
+  const bcert = L && L.entries.find((c) => c.kind === "birth");
+  const hasK = () => !!(bcert && bcert.status === "proved"); // every line is a conjunct of one theorem
+  const proved = bcert && bcert.status === "proved";
+  const mini = (h) => `<div class="mini">${Array.from(hex2(h), (b) => `<i class="${OPC[b] ? "o-" + OPC[b] : b === 0 ? "o-zero" : ""}"></i>`).join("")}</div>`;
+  const mk = (ok) => ok ? `<span class="mark ok">✓ proved in Lean</span>` : L ? `<span class="mark no">not proved</span>` : `<span class="mark wait">Lean check pending</span>`;
+  const epoch1 = BI.epoch_index + 1;
+  document.getElementById("birth-lede").textContent =
+    `We re-ran world 52 from its seed and found the collision in which its winning lineage first appears. Two programs, neither of which can copy itself, were paired during epoch ${fmt(epoch1)}. No mutation touched them. One of the two programs that came out copies itself perfectly, backwards, into any partner at all. ${fmt(BI.epochs_to_90k)} epochs later its descendants numbered ${fmt(BI.count_90k)}.`;
+  document.getElementById("certificate").innerHTML =
+    `<div class="cert-top"><span class="eyebrow">Certificate of birth</span><span class="qed${proved ? "" : " pending"}">${proved ? "Q.E.D. · LEAN" : "PENDING"}</span></div>` +
+    `<h3>World 52, first of its lineage</h3>` +
+    `<dl class="fields">` +
+    `<dt>When</dt><dd>epoch ${fmt(epoch1)}, collision ${fmt(BI.pair)} of ${fmt(BI.pairs_total)}</dd>` +
+    `<dt>Where</dt><dd>a soup of 131,072 random programs, the paper’s rules</dd>` +
+    `<dt>Parent A</dt><dd>does not copy itself ${mk(hasK("parent"))}${mini(BI.A)}</dd>` +
+    `<dt>Parent B</dt><dd>does not copy itself ${mk(hasK("parent"))}${mini(BI.B)}</dd>` +
+    `<dt>Mutation</dt><dd>none in this collision</dd>` +
+    `<dt>The event</dt><dd>A and B, run together, give the newborn ${mk(hasK("collision"))}</dd>` +
+    `<dt>Newborn</dt><dd>copies itself, reversed, into every one of the 256<sup>64</sup> possible partners ${mk(hasK("newborn"))}${mini(BI.C)}</dd>` +
+    `<dt>Mirror strand</dt><dd>copies itself too, so the lineage is closed from birth ${mk(hasK("lineage"))}</dd>` +
+    `<dt>Descendants</dt><dd>${fmt(BI.count_90k)} after ${fmt(BI.epochs_to_90k)} epochs</dd>` +
+    `<dt>Checked by</dt><dd>${proved ? `Lean 4 kernel, <code>decide +kernel</code>; axioms ${(bcert.axioms || ["propext", "Quot.sound"]).join(", ")}; theorem <code>birth_certificate_world52</code>` : "pending"}</dd>` +
+    `</dl>`;
+  // collision replay: the concrete run of A ++ B
+  const eA = document.getElementById("bA"), eB = document.getElementById("bB"), ca = [], cb = [];
+  for (let i = 0; i < 64; i++) { const a = document.createElement("span"), b = document.createElement("span"); a.className = b.className = "cell"; eA.appendChild(a); eB.appendChild(b); ca.push(a); cb.push(b); }
+  const Cb = hex2(BI.C);
+  let BM = null, bt = 0, bplay = false;
+  const bsetup = () => { BM = new AM(Array.from(hex2(BI.A)).concat(Array.from(hex2(BI.B))), false); bdraw(); };
+  function bdraw() {
+    const t = BM.t; let same = 0;
+    for (let i = 0; i < 64; i++) {
+      paint(ca[i], t[i]); paint(cb[i], t[64 + i]);
+      if (t[64 + i] === Cb[i]) { same++; cb[i].classList.add("learned"); }
+    }
+    const at = (p) => (p < 64 ? ca[p] : cb[p - 64]);
+    if (!BM.done && BM.pos < 128) at(BM.pos).classList.add("ip");
+    at(BM.h0 & 127).classList.add("h0"); at(BM.h1 & 127).classList.add("h1");
+    document.getElementById("b-step").textContent = `step ${fmt(BM.step)} of 8,192`;
+    document.getElementById("b-new").textContent = `${same}/64 bytes of the newborn in place`;
+    if (same === 64) document.getElementById("b-lblB").textContent = "the newborn · copies itself into any partner";
+    if (BM.done) document.getElementById("b-lblA").textContent = "what parent A became (still not a replicator)";
+  }
+  function btick() {
+    const sp = +document.getElementById("b-speed").value;
+    for (let k = 0; k < sp && !BM.done; k++) { let g = 0, ev; do { ev = BM.next(); g++; } while (ev && ev.write == null && ev.test == null && !BM.done && g < 64); }
+    bdraw();
+    if (BM.done) { bplay = false; document.getElementById("b-play").textContent = "Replay the collision"; return; }
+    if (bplay) bt = setTimeout(() => requestAnimationFrame(btick), 24);
+  }
+  document.getElementById("b-play").onclick = () => {
+    if (!BM || BM.done) { document.getElementById("b-lblB").textContent = "parent B · does not copy itself"; document.getElementById("b-lblA").textContent = "parent A · does not copy itself"; bsetup(); }
+    bplay = !bplay; document.getElementById("b-play").textContent = bplay ? "Pause" : "Replay the collision";
+    if (bplay) btick();
+  };
+  bsetup();
+} else { document.getElementById("birth").hidden = true; }
+
+// ------------------------------------------------------------ demo
+const DEMOS = [
+  { id: "world-52", title: "World 52 · copies backwards", heads: false },
+  { id: "world-50", title: "World 50 · one weak byte", heads: false, heel: 63 },
+  { id: "world-1005", title: "World 1005 · copies forwards", heads: true },
+  { id: "world-1007", title: "World 1007 · forwards, looks ahead", heads: true, heel: 0 },
+].filter((d) => ORG[d.id]);
+const elA = document.getElementById("tapeA"), elB = document.getElementById("tapeB");
+const cA = [], cB = [];
+for (let i = 0; i < 64; i++) { const a = document.createElement("span"), b = document.createElement("span"); a.className = b.className = "cell"; elA.appendChild(a); elB.appendChild(b); cA.push(a); cB.push(b); }
+let demo = DEMOS[0], M = null, timer = 0, playing = false, learned = new Set(), concrete = false;
+function setup(useKiller) {
+  const o = ORG[demo.id]; const P = Array.from(hex2(o.genome));
+  let partner = new Array(64).fill(U);
+  concrete = false;
+  if (demo.heel != null) partner[demo.heel] = NZ;
+  if (useKiller && o.killer) { partner = Array.from(hex2(o.killer)); concrete = true; }
+  M = new AM(P.concat(partner), demo.heads); learned = new Set();
+  document.getElementById("lbl-a").textContent = `parent · ${demo.id.replace("-", " ")} · ${demo.heads ? "heads set by the genome" : "heads start at 0"}`;
+  document.getElementById("lbl-b").innerHTML = concrete ? "partner: one specific killer partner (every byte known)" : demo.heel != null ? `partner: every byte unknown except byte ${demo.heel}, which is only known to be non-zero` : "partner: 256<sup>64</sup> possibilities, every byte unknown";
+  document.getElementById("alt").hidden = !(o.killer && demo.heel != null);
+  document.getElementById("alt").textContent = concrete ? "Back to the proof" : `Try a partner with byte ${demo.heel} = 0`;
+  verdict("", "");
+  draw(null);
+}
+function paint(el, v) { el.textContent = glyph(v); el.className = "cell " + cls(v); }
+function draw(ev) {
+  const t = M.t;
+  for (let i = 0; i < 64; i++) { paint(cA[i], t[i]); paint(cB[i], t[64 + i]); if (learned.has(64 + i) && !unk(t[64 + i])) cB[i].classList.add("learned"); }
+  const at = (p) => (p < 64 ? cA[p] : cB[p - 64]);
+  if (!M.done && M.pos < 128) at(M.pos).classList.add("ip");
+  at(M.h0 & 127).classList.add("h0"); at(M.h1 & 127).classList.add("h1");
+  if (ev && ev.test != null) at(ev.test).classList.add(ev.bad ? "test-bad" : "test-ok");
+  if (M.stuck && M.stuck.at != null) at(M.stuck.at).classList.add("test-bad");
+  const unknownLeft = t.slice(64).filter(unk).length;
+  document.getElementById("m-unknown").textContent = String(unknownLeft);
+  document.getElementById("m-tests").textContent = fmt(M.tests);
+  document.getElementById("m-bad").textContent = M.stuck ? "1" : "0";
+  document.getElementById("lbl-step").textContent = `step ${fmt(M.step)} of 8,192`;
+  document.getElementById("lbl-left").textContent = unknownLeft ? `${unknownLeft} unknown` : "fully determined";
+  document.getElementById("prog").style.width = (100 * M.step) / 8192 + "%";
+}
+function verdict(kind, html) { const v = document.getElementById("verdict"); v.className = "verdict" + (kind ? " " + kind : ""); v.innerHTML = html; }
+function finish() {
+  playing = false; document.getElementById("play").textContent = "Run the proof";
+  const o = ORG[demo.id], t = M.t, P = t.slice(0, 64), child = t.slice(64), rev = P.slice().reverse();
+  if (M.stuck) {
+    verdict("bad", `Stopped at step ${fmt(M.step)}: ${M.stuck.reason} (tape byte ${M.stuck.at}, partner byte ${M.stuck.at - 64}). What this organism does next depends on who it meets, so no theorem “for every partner” exists along this route.` +
+      (o.killer ? ` A killer partner exists; press the button to run it.` : ""));
+    if (o.killer) { document.getElementById("alt").hidden = false; document.getElementById("alt").textContent = "Run the killer partner"; }
+    return;
+  }
+  const exactMirror = child.every((v, i) => v === rev[i]), exactCopy = child.every((v, i) => v === P[i]);
+  if (concrete) {
+    const lost = (demo.heads ? P : rev).reduce((n, v, i) => n + (OPC[v] && child[i] !== v ? 1 : 0), 0);
+    const checked = (certs[demo.id] || []).some((c) => (c.kind === "killer" || c.kind === "achilles") && c.status === "proved");
+    verdict("bad", `With this partner the copy fails: ${lost} of the genome’s instruction bytes never arrive in the child.` + (checked ? " Lean’s kernel checks this run too, as a concrete counterexample." : L ? "" : " (Lean check pending.)"));
+    return;
+  }
+  const st = status(o);
+  const thm = (certs[demo.id] || []).find((c) => c.status === "proved" && (c.kind === "exact" || c.kind === "achilles"));
+  if (exactMirror || exactCopy) {
+    const what = exactMirror ? "the parent written backwards" : "an exact copy of the parent";
+    const scope = demo.heel != null ? `every partner whose byte ${demo.heel} is not zero` : "every one of the 256<sup>64</sup> partners";
+    verdict(demo.heel != null ? "heel" : "ok", `All ${fmt(M.step)} steps done without deciding anything on an unknown byte. The partner half is now ${what}, for ${scope}.` +
+      (thm ? ` Lean: <code>${thm.theorem}</code> (${st.label}).` : L ? "" : " (Lean certificate pending.)"));
+  } else {
+    verdict("", "The run finished, but the child is not an exact copy.");
+  }
+}
+function tick() {
+  const sp = +document.getElementById("speed").value; let ev = null;
+  const fast = M.t.slice(64).every((v) => !unk(v)); // once the partner is fully known, the rest only repeats known steps
+  const n = fast ? sp * 40 : sp;
+  for (let k = 0; k < n && !M.done; k++) {
+    let guard = 0;
+    do { ev = M.next(); guard++; } while (ev && ev.write == null && ev.test == null && !M.done && guard < 64);
+    if (ev && ev.write != null && ev.write >= 64) learned.add(ev.write);
+    if (ev && ev.test != null && sp <= 8) break; // pause the frame on every loop test at low speed
+  }
+  draw(ev);
+  if (M.done) { finish(); return; }
+  if (playing) timer = setTimeout(() => requestAnimationFrame(tick), sp <= 2 ? 120 : 24);
+}
+document.getElementById("play").onclick = () => {
+  if (M.done) setup(concrete);
+  playing = !playing; document.getElementById("play").textContent = playing ? "Pause" : "Run the proof";
+  if (playing) tick();
+};
+document.getElementById("reset").onclick = () => { playing = false; clearTimeout(timer); setup(false); document.getElementById("play").textContent = "Run the proof"; };
+document.getElementById("alt").onclick = () => { playing = false; clearTimeout(timer); setup(!concrete); document.getElementById("play").textContent = "Run the proof"; };
+const picker = document.getElementById("picker");
+picker.innerHTML = DEMOS.map((d, i) => `<button type="button" data-i="${i}" aria-pressed="${i === 0}">${d.title}</button>`).join("");
+picker.onclick = (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  picker.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+  demo = DEMOS[+b.dataset.i]; playing = false; clearTimeout(timer); setup(false); document.getElementById("play").textContent = "Run the proof";
+};
+setup(false);
+
+// ------------------------------------------------------------ wall
+function strip(h) { return `<div class="strip">${Array.from(hex2(h), (b) => `<i class="${OPC[b] ? "o-" + OPC[b] : b === 0 ? "o-zero" : ""}"></i>`).join("")}</div>`; }
+function card(o) {
+  const s = status(o);
+  const name = o.id === "paper-fig4" ? "Paper, Figure 4" : o.id.replace("world-", "World ");
+  const cs = certs[o.id] || [];
+  const lin = cs.some((c) => c.kind === "lineage" && c.status === "proved");
+  // kernel seconds from our clean serial rebuild (per module), not from the loaded parallel runs
+  const vt = L && L.verify && L.verify.module_seconds ? cs.reduce((a, c) => a + (L.verify.module_seconds[c.module] || 0), 0) : 0;
+  const secsO = vt;
+  let line;
+  if (s.key === "proved") line = `${o.child === "mirror" ? "child = parent reversed" : "child = parent"}${lin ? " · lineage closed (+ ⇄ −)" : ""}`;
+  else if (s.key === "heel") line = `dies only if partner byte ${o.stuck_at - 64} is 0`;
+  else if (s.key === "killed") line = `survives ${(100 * (o.survival || 0)).toFixed(1)}% of random partners`;
+  else if (!o.abstract_ok) line = o.stuck_at >= 64 ? `outcome depends on partner byte ${o.stuck_at - 64}` : "outcome depends on the partner";
+  else line = "";
+  return `<article class="cert"><header><h3>${name}</h3><span class="seal ${s.key}">${s.label}</span></header>${strip(o.genome)}<div class="meta">${line}${secsO ? `<br>kernel check ${secsO.toFixed(0)} s` : ""}${o.alive_epoch != null && o.alive_epoch >= 0 ? `<br>came alive at epoch ${fmt(o.alive_epoch)}` : o.id === "paper-fig4" ? "<br>hand-written by the paper’s authors" : ""}</div></article>`;
+}
+const order = { proved: 0, heel: 1, killed: 2, none: 3, pending: 4 };
+const sortW = (xs) => xs.slice().sort((a, b) => order[status(a).key] - order[status(b).key] || (a.id > b.id ? 1 : -1));
+document.getElementById("wall-a").innerHTML = sortW(A).map(card).join("");
+document.getElementById("wall-b").innerHTML = sortW(B).map(card).join("");
+const cnt = (xs, k) => xs.filter((o) => status(o).key === k).length;
+document.getElementById("wall-a-title").textContent = `Heads start at 0 (the paper’s rule): ${cnt(A, "proved")} of ${A.length} proved`;
+document.getElementById("wall-b-title").textContent = `Heads set by the genome: ${cnt(B, "proved")} of ${B.length} proved`;
+document.getElementById("wall-legend").innerHTML =
+  `<span><i class="seal proved">∀ partners</i> exact copy proved for all 256<sup>64</sup> partners</span>` +
+  `<span><i class="seal heel">one byte ≠ 0</i> proved for every partner whose weak byte is non-zero</span>` +
+  `<span><i class="seal killed">killer</i> a specific partner that makes the copy fail, checked by Lean</span>` +
+  `<span><i class="seal none">no theorem</i> no exact-copy theorem (copies with offsets, partly, or depending on the partner)</span>`;
+document.getElementById("wall-lede").textContent = L
+  ? `Each card is one organism that emerged in our re-runs of the Computational Life soup, plus the replicator the paper’s authors wrote by hand. The seal is Lean’s verdict, not a test result.`
+  : `Each card is one organism that emerged in our re-runs of the Computational Life soup. Lean certificates are still being built.`;
+
+// ------------------------------------------------------------ why
+const pa = cnt(A, "proved"), pb = cnt(B, "proved");
+document.getElementById("why-p1").textContent =
+  `Under the paper’s rule ${pa} of ${A.length} organisms are proved to copy themselves exactly whatever they meet. Under the rule where the genome sets its heads, ${pb} of ${B.length} are. The difference is visible in where each organism looks while it copies.`;
+document.getElementById("why-p2").textContent =
+  `A backward copier writes a byte and then tests the byte it has just written, so its loop only ever reads its own work. Most forward copiers test the byte ahead of the write head, which still belongs to the partner. That single look decides their fate: in world 1007, a partner whose first byte is zero ends the copy before it starts.`;
+const stuckB = B.filter((o) => !o.abstract_ok).length, stuckA = A.filter((o) => !o.abstract_ok).length;
+document.getElementById("why-table").innerHTML =
+  `<thead><tr><th></th><th class="num">heads start at 0</th><th class="num">heads set by genome</th></tr></thead><tbody>` +
+  `<tr><td>organisms</td><td class="num">${A.length}</td><td class="num">${B.length}</td></tr>` +
+  `<tr><td>exact copy proved for every partner</td><td class="num">${pa}</td><td class="num">${pb}</td></tr>` +
+  `<tr><td>loop test reads a partner byte (outcome depends on the partner)</td><td class="num">${stuckA}</td><td class="num">${stuckB}</td></tr></tbody>`;
+
+// ------------------------------------------------------------ theorems
+const ex = (kind) => L && L.entries.find((c) => c.kind === kind && c.status === "proved");
+const TH = [
+  ["birth", "The birth certificate of world 52", "The actual collision of epoch 5,858 turns parents A and B into A_out and the newborn C; C and its mirror strand copy themselves into every partner; each parent has a partner it fails to copy itself into."],
+  ["exact", "Exact copy, every partner", "For a backward copier the child is the parent reversed; for a forward copier, the parent itself. B ranges over all 64-byte partners."],
+  ["lineage", "Closed lineage", "Both strands of a backward copier copy each other, so + makes −, and − makes + again, whatever they meet."],
+  ["achilles", "One weak byte", "World 50 copies itself exactly with every partner whose last byte is non-zero. A partner whose last byte is zero kills it: one such partner is checked in Lean, and all 1,500 we tried died."],
+  ["killer", "Killer partner", "A concrete partner for which the copy fails, checked by running it in the kernel."],
+];
+document.getElementById("thms").innerHTML = TH.map(([k, h, p]) => { const e = ex(k); return e ? `<div class="thm"><h3>${h}</h3><pre><code>${e.statement.replace(/</g, "&lt;")}</code></pre><p>${p}</p></div>` : ""; }).join("") || `<p class="caption">Theorem statements appear here once the Lean atlas is built.</p>`;
+if (L && L.totals) {
+  const tot = Object.values(L.totals).reduce((a, t) => a + (t.proved || 0), 0);
+  document.getElementById("trust").innerHTML = `<tbody>` +
+    `<tr><td>theorems proved</td><td class="num">${fmt(tot)}</td></tr>` +
+    (L.verify ? `<tr><td>clean rebuild, one module at a time, Mac mini</td><td class="num">${L.verify.modules_ok} of ${L.verify.modules} modules · ${fmt(Math.round(L.verify.total_seconds))} s</td></tr>` : "") +
+    `<tr><td>axioms used</td><td class="num">${(L.axioms_used || []).join(", ")}</td></tr>` +
+    `<tr><td>native_decide / sorry / admit</td><td class="num">none</td></tr>` +
+    `<tr><td>Lean version</td><td class="num">4.21.0</td></tr></tbody>`;
+}
+
+// ------------------------------------------------------------ notes
+const NOTES = [
+  ["What is proved, exactly", "Each theorem is about a Lean transcription of BFF and one fixed 64-byte genome. It covers every partner at once. The link between the Lean interpreter and the simulator that grew these organisms is tested (240 tapes, identical results), not proved."],
+  ["Why the shortcut is sound", "The unknown-partner run is itself a Lean function. A general theorem, proved once, says: if that run never has to decide on an unknown byte, every real partner leads to the same known bytes. The kernel then evaluates the run for each organism."],
+  ["No trusted evaluator", "Every run is checked with decide +kernel, split into 512-step pieces whose boundaries are re-derived by the kernel. Nothing uses native_decide, so no compiled code is trusted; the only axioms are Lean’s standard propext and Quot.sound."],
+  ["Where the organisms come from", "Each genome is the most common replicator in a world that came alive in our runs of the paper’s soup (131,072 programs, mutation 1/4096), under the paper’s rule or cubff’s genome-set-heads variant. The paper’s Figure 4 replicator is included as a hand-written reference."],
+  ["What ‘no theorem’ means", "An organism without a seal may still replicate well in practice; it just copies with offsets, only partly, or its fate depends on a partner byte in a way this proof method cannot settle."],
+];
+document.getElementById("notes").innerHTML = NOTES.map(([h, p]) => `<div><h3>${h}</h3><p>${p}</p></div>`).join("");
+})();
+</script>
+</body></html>

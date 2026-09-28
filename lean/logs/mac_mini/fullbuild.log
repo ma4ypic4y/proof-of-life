@@ -1,0 +1,74 @@
+✔ [64/74] Built ProofOfLife.Organisms.World48
+✔ [65/74] Built ProofOfLife.Organisms.World33
+✔ [66/74] Built ProofOfLife.Organisms.World11
+✔ [67/74] Built ProofOfLife.Birth52.Collision
+✔ [68/74] Built ProofOfLife.Birth52.Certificate
+✔ [69/74] Built ProofOfLife.Organisms.World48Lineage
+✔ [70/74] Built ProofOfLife.Organisms.World33Lineage
+✔ [71/74] Built ProofOfLife.Organisms.World11Lineage
+ℹ [73/74] Built Atlas
+info: Atlas.lean:74:0: 'ProofOfLife.Birth52.birth_certificate_world52' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:75:0: 'ProofOfLife.PaperFig4.mirror' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:76:0: 'ProofOfLife.PaperFig4.lineage_closed' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:77:0: 'ProofOfLife.World2.mirror' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:78:0: 'ProofOfLife.World2.lineage_closed' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:79:0: 'ProofOfLife.World7.mirror' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:80:0: 'ProofOfLife.World7.lineage_closed' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:81:0: 'ProofOfLife.World10.mirror' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:82:0: 'ProofOfLife.World10.lineage_closed' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:83:0: 'ProofOfLife.World11.mirror' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:84:0: 'ProofOfLife.World11.lineage_closed' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:85:0: 'ProofOfLife.World12.mirror' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:86:0: 'ProofOfLife.World12.lineage_closed' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:87:0: 'ProofOfLife.World15.mirror' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:88:0: 'ProofOfLife.World15.lineage_closed' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:89:0: 'ProofOfLife.World29.mirror' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:90:0: 'ProofOfLife.World29.lineage_closed' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:91:0: 'ProofOfLife.World30.mirror' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:92:0: 'ProofOfLife.World30.lineage_closed' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:93:0: 'ProofOfLife.World32.mirror' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:94:0: 'ProofOfLife.World32.lineage_closed' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:95:0: 'ProofOfLife.World33.mirror' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:96:0: 'ProofOfLife.World33.lineage_closed' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:97:0: 'ProofOfLife.World37.mirror' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:98:0: 'ProofOfLife.World37.lineage_closed' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:99:0: 'ProofOfLife.World38.mirror' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:100:0: 'ProofOfLife.World38.lineage_closed' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:101:0: 'ProofOfLife.World41.mirror' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:102:0: 'ProofOfLife.World41.lineage_closed' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:103:0: 'ProofOfLife.World42.mirror' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:104:0: 'ProofOfLife.World42.lineage_closed' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:105:0: 'ProofOfLife.World46.mirror' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:106:0: 'ProofOfLife.World46.lineage_closed' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:107:0: 'ProofOfLife.World48.mirror' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:108:0: 'ProofOfLife.World48.lineage_closed' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:109:0: 'ProofOfLife.World49.mirror' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:110:0: 'ProofOfLife.World49.lineage_closed' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:111:0: 'ProofOfLife.World52.mirror' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:112:0: 'ProofOfLife.World52.lineage_closed' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:113:0: 'ProofOfLife.World55.mirror' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:114:0: 'ProofOfLife.World56.mirror' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:115:0: 'ProofOfLife.World56.lineage_closed' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:116:0: 'ProofOfLife.World58.mirror' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:117:0: 'ProofOfLife.World58.lineage_closed' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:118:0: 'ProofOfLife.World1005.copy' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:119:0: 'ProofOfLife.World1009.copy' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:120:0: 'ProofOfLife.World1014.copy' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:121:0: 'ProofOfLife.World1016.copy' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:122:0: 'ProofOfLife.World1021.copy' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:123:0: 'ProofOfLife.World1027.copy' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:124:0: 'ProofOfLife.World1028.copy' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:125:0: 'ProofOfLife.World50.achilles' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:126:0: 'ProofOfLife.World50.killer' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:127:0: 'ProofOfLife.World1006.killer' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:128:0: 'ProofOfLife.World1007.killer' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:129:0: 'ProofOfLife.World1008.killer' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:130:0: 'ProofOfLife.World1011.killer' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:131:0: 'ProofOfLife.World1012.killer' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:132:0: 'ProofOfLife.World1013.killer' depends on axioms: [propext, Quot.sound]
+info: Atlas.lean:133:0: 'ProofOfLife.World1024.killer' depends on axioms: [propext, Quot.sound]
+Build completed successfully.
+real 262,60
+user 624,94
+sys 151,51
+RC=0

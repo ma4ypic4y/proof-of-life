@@ -1,0 +1,12 @@
+name = "MirrorLife"
+defaultTargets = ["MirrorLife", "ProofOfLife", "Atlas"]
+
+[[lean_lib]]
+name = "MirrorLife"
+
+[[lean_lib]]
+name = "ProofOfLife"
+globs = ["ProofOfLife.+"]
+
+[[lean_lib]]
+name = "Atlas"

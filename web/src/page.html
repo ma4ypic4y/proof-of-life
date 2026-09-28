@@ -1,0 +1,757 @@
+<title>Life Copied Backwards</title>
+<meta name="description" content="Self-replicating programs emerge from random noise. Every time, they copy themselves in reverse, so each species lives as two mirror strands.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<style>
+:root {
+  --ground: #eef1f0;
+  --panel: #e3e8e6;
+  --card: #f7f9f8;
+  --ink: #111917;
+  --ink-2: #46524e;
+  --ink-3: #75817d;
+  --rule: #c8d0cd;
+  --loop: #0b8a6f;
+  --copy: #c42f78;
+  --move: #6552cc;
+  --arith: #b86a00;
+  --zero: #d03d2a;
+  --filler: #b7c0bd;
+  --plus: #1f63c6;
+  --minus: #e0622a;
+  --plus-soft: rgba(31, 99, 198, .14);
+  --minus-soft: rgba(224, 98, 42, .16);
+  --focus: #1f63c6;
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body: "Source Serif 4", "Iowan Old Style", Georgia, serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #0c1110; --panel: #141b19; --card: #111816; --ink: #e2e9e6; --ink-2: #a3b0ab;
+    --ink-3: #74827d; --rule: #26302d; --loop: #2cc39c; --copy: #f05aa2; --move: #9a8cf5;
+    --arith: #f0a33a; --zero: #ff6a52; --filler: #3b4744; --plus: #5b9bff; --minus: #ff8a4c;
+    --plus-soft: rgba(91, 155, 255, .16); --minus-soft: rgba(255, 138, 76, .16); --focus: #5b9bff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ground: #0c1110; --panel: #141b19; --card: #111816; --ink: #e2e9e6; --ink-2: #a3b0ab;
+  --ink-3: #74827d; --rule: #26302d; --loop: #2cc39c; --copy: #f05aa2; --move: #9a8cf5;
+  --arith: #f0a33a; --zero: #ff6a52; --filler: #3b4744; --plus: #5b9bff; --minus: #ff8a4c;
+  --plus-soft: rgba(91, 155, 255, .16); --minus-soft: rgba(255, 138, 76, .16); --focus: #5b9bff;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--ground); color: var(--ink); font-family: var(--body); font-size: 18px; line-height: 1.6; }
+.page { max-width: 1120px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 96px; }
+.measure { max-width: 680px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.05; margin: 0; }
+h1 { font-size: clamp(44px, 8.4vw, 104px); font-weight: 800; letter-spacing: -0.035em; }
+h2 { font-size: clamp(30px, 4.2vw, 46px); font-weight: 700; letter-spacing: -0.02em; }
+h3 { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+p { margin: 0; }
+a { color: var(--plus); }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+.dek { font-size: clamp(20px, 2.2vw, 25px); line-height: 1.4; color: var(--ink-2); max-width: 760px; }
+.stack { display: flex; flex-direction: column; gap: 18px; }
+section { display: flex; flex-direction: column; gap: 22px; padding-block: 56px 8px; }
+section + section { border-top: 1px solid var(--rule); }
+.caption { font-family: var(--mono); font-size: 12.5px; line-height: 1.55; color: var(--ink-3); max-width: 760px; }
+.mono { font-family: var(--mono); }
+code { font-family: var(--mono); font-size: .86em; background: var(--panel); padding: .08em .35em; border-radius: 4px; }
+.hl-plus { color: var(--plus); font-weight: 600; }
+.hl-minus { color: var(--minus); font-weight: 600; }
+button, select { font-family: var(--mono); font-size: 13px; color: var(--ink); background: var(--card); border: 1px solid var(--rule); border-radius: 6px; padding: 7px 12px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--ink-3); }
+button.primary { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.controls .readout { font-family: var(--mono); font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+/* hero */
+.hero { display: flex; flex-direction: column; gap: 22px; padding-block: 8px 12px; }
+.hero h1 .back { display: inline-block; transform: scaleX(-1); color: var(--minus); }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 6px; }
+.stat { border-top: 2px solid var(--ink); padding-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.stat b { font-family: var(--display); font-size: clamp(30px, 4vw, 44px); font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1; }
+.stat span { font-family: var(--mono); font-size: 12px; line-height: 1.45; color: var(--ink-2); }
+@media (max-width: 720px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* film */
+.film { margin: 8px 0 0; display: flex; flex-direction: column; gap: 10px; }
+.film-frame { position: relative; border-radius: 10px; overflow: hidden; background: #0c1110; border: 1px solid var(--rule); }
+.film-frame video { display: block; width: 100%; max-width: 100%; aspect-ratio: 2 / 1; image-rendering: pixelated; }
+.film-hud { position: absolute; left: 12px; bottom: 10px; display: flex; gap: 14px; flex-wrap: wrap; font-family: var(--mono); font-size: 13px; color: #e2e9e6; background: rgba(12, 17, 16, .72); padding: 6px 10px; border-radius: 6px; font-variant-numeric: tabular-nums; }
+.film-hud .hl-plus { color: #5b9bff; } .film-hud .hl-minus { color: #ff8a4c; }
+
+/* tapes */
+.bench { background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.tape-label { font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); display: flex; justify-content: space-between; gap: 12px; }
+.tape { display: grid; grid-template-columns: repeat(64, minmax(0, 1fr)); gap: 2px; }
+@media (max-width: 760px) { .tape { grid-template-columns: repeat(32, minmax(0, 1fr)); } }
+.cell { position: relative; aspect-ratio: 1 / 1.35; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: clamp(8px, 1.05vw, 12.5px); font-weight: 600; border-radius: 2px; background: var(--panel); color: var(--ink-3); transition: background .25s; }
+.cell.f { color: var(--filler); font-weight: 400; }
+.cell.o-loop { color: var(--loop); } .cell.o-copy { color: var(--copy); } .cell.o-move { color: var(--move); }
+.cell.o-arith { color: var(--arith); } .cell.o-zero { color: var(--zero); }
+.cell.ip { box-shadow: inset 0 0 0 2px var(--ink); }
+.cell.h0::after, .cell.h1::after { position: absolute; left: 50%; transform: translateX(-50%); font-size: 9px; font-weight: 600; line-height: 1; }
+.cell.h0::after { content: "0"; top: -11px; color: var(--ink-2); }
+.cell.h1::after { content: "1"; bottom: -11px; color: var(--ink-2); }
+.cell.h0.h1::after { content: "01"; }
+.cell.src { background: var(--plus-soft); }
+.cell.dst { background: var(--minus); color: #fff; }
+.cell.written { background: var(--minus-soft); }
+.cell.match { background: var(--minus-soft); }
+.tape-wrap { display: flex; flex-direction: column; gap: 14px; padding-block: 6px; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
+.legend i { font-style: normal; font-weight: 600; }
+.result-line { font-family: var(--mono); font-size: 13px; min-height: 1.6em; color: var(--ink); }
+
+/* opcode table */
+.ops { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 640px) { .ops { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.op { background: var(--card); border: 1px solid var(--rule); border-radius: 8px; padding: 10px 12px; display: flex; gap: 10px; align-items: baseline; }
+.op b { font-family: var(--mono); font-size: 20px; }
+.op span { font-family: var(--mono); font-size: 12px; color: var(--ink-2); line-height: 1.35; }
+
+/* charts */
+.chart { width: 100%; max-width: 100%; display: block; }
+.chart-box { background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 14px; }
+
+/* specimen plates */
+.plates { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.plate { background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.plate header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.plate header h3 { font-size: 17px; }
+.badge { font-family: var(--mono); font-size: 11px; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--rule); color: var(--ink-2); white-space: nowrap; }
+.badge.pal { border-color: var(--loop); color: var(--loop); }
+.badge.two { border-color: var(--copy); color: var(--copy); }
+.badge.fwd { border-color: var(--plus); color: var(--plus); }
+.badge.odd { border-color: var(--zero); color: var(--zero); }
+.strip-row { display: grid; grid-template-columns: 18px 1fr; gap: 6px; align-items: center; }
+.strip-row .sgn { font-family: var(--mono); font-size: 13px; font-weight: 600; }
+.strip { display: grid; grid-template-columns: repeat(64, minmax(0, 1fr)); height: 22px; gap: 1px; }
+.strip i { display: block; border-radius: 1px; background: var(--panel); }
+.strip i.o-loop { background: var(--loop); } .strip i.o-copy { background: var(--copy); } .strip i.o-move { background: var(--move); }
+.strip i.o-arith { background: var(--arith); } .strip i.o-zero { background: var(--zero); }
+.strip i.mach { outline: 2px solid var(--ink); outline-offset: 0; z-index: 1; }
+.glyphs { font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); letter-spacing: 0; white-space: pre; overflow-x: auto; }
+.ratio { display: flex; height: 8px; border-radius: 99px; overflow: hidden; background: var(--panel); }
+.ratio .p { background: var(--plus); } .ratio .m { background: var(--minus); }
+.plate .meta { font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); display: flex; justify-content: space-between; gap: 10px; font-variant-numeric: tabular-nums; }
+
+/* proof box */
+.proof { border: 1px solid var(--rule); border-radius: 10px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; max-width: 820px; background: var(--card); }
+.proof pre { margin: 0; overflow-x: auto; background: var(--panel); border-radius: 8px; padding: 14px 16px; }
+.proof pre code { background: none; padding: 0; font-size: 14px; line-height: 1.5; color: var(--ink); }
+.proof p { font-size: 16.5px; line-height: 1.55; color: var(--ink-2); max-width: 70ch; }
+
+/* compare table */
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-family: var(--mono); font-size: 13.5px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--rule); }
+th { color: var(--ink-3); font-weight: 400; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+td.num { text-align: right; }
+
+/* live soup */
+.soup-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 860px) { .soup-grid { grid-template-columns: 1fr; } }
+.soup-canvas { width: 100%; max-width: 100%; aspect-ratio: 1; image-rendering: pixelated; border-radius: 8px; background: var(--panel); display: block; }
+.soup-side { display: flex; flex-direction: column; gap: 14px; }
+.meter { display: grid; grid-template-columns: 26px 1fr 64px; gap: 8px; align-items: center; font-family: var(--mono); font-size: 13px; font-variant-numeric: tabular-nums; }
+.meter .bar { height: 10px; background: var(--panel); border-radius: 99px; overflow: hidden; }
+.meter .bar > div { height: 100%; width: 0; transition: width .2s; }
+
+.ab { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+@media (max-width: 760px) { .ab { grid-template-columns: 1fr; } }
+.ab-panel { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.ab-panel figcaption { display: flex; flex-direction: column; gap: 2px; }
+.ab-panel figcaption b { font-family: var(--display); font-size: 20px; }
+.ab-panel figcaption .readout { overflow-wrap: anywhere; font-size: 11.5px; color: var(--ink-3); }
+
+/* prompt soup */
+.phase-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.quote { background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.quote .when { font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); }
+.quote p { font-family: var(--mono); font-size: 12.5px; line-height: 1.5; color: var(--ink); }
+.textgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 4px; }
+.textgrid div { font-family: var(--mono); font-size: 10px; line-height: 1.35; padding: 6px; border-radius: 4px; background: var(--panel); color: var(--ink-2); height: 58px; overflow: hidden; }
+input[type=range] { width: 100%; accent-color: var(--ink); }
+
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px 28px; }
+.notes div { display: flex; flex-direction: column; gap: 6px; }
+.notes h3 { font-size: 16px; }
+.notes p { font-size: 15.5px; line-height: 1.55; color: var(--ink-2); }
+footer { padding-block: 40px 0; font-family: var(--mono); font-size: 12px; color: var(--ink-3); }
+@media (prefers-reduced-motion: reduce) { .cell { transition: none; } }
+</style>
+
+<div class="page">
+  <header class="hero">
+    <div class="eyebrow">Computational Life, replayed on a Mac mini</div>
+    <h1>Life copied <span class="back">backwards</span></h1>
+    <p class="dek">Fill a world with random programs, let them collide and rewrite each other, and self-replicators appear on their own. We watched them appear in dozens of worlds. Almost every time, they copied themselves in reverse, so each species lives as a pair of mirror strands.</p>
+    <div class="stats" id="stats"></div>
+  </header>
+
+  <figure class="film" id="film" hidden>
+    <div class="film-frame">
+      <video id="film-video" src="img/world52.mp4" poster="img/world52-poster.png" autoplay muted loop playsinline preload="auto" aria-label="Time-lapse of world 52 coming alive"></video>
+      <div class="film-hud" aria-live="off">
+        <span id="film-epoch">epoch —</span>
+        <span><i class="hl-plus">+</i> <b id="film-plus">0</b></span>
+        <span><i class="hl-minus">−</i> <b id="film-minus">0</b></span>
+      </div>
+    </div>
+    <canvas class="chart" id="film-chart" height="220" aria-label="Copies of the two strands over time, log scale"></canvas>
+    <figcaption class="caption" id="film-cap"></figcaption>
+  </figure>
+
+  <section id="watch">
+    <div class="stack measure">
+      <div class="eyebrow">Specimen · world <span id="hero-world"></span></div>
+      <h2>Watch one copy itself</h2>
+      <p>This 64-byte program emerged by itself from noise in one of our worlds. Below it is a random partner. When the two are glued into one tape and run, the program walks one head forward over itself and the other head backward from the far end of its partner, copying a byte per turn of a five-instruction loop. The offspring is the parent read right to left.</p>
+    </div>
+    <div class="bench">
+      <div class="tape-wrap">
+        <div class="tape-label"><span>tape[0–63] · parent</span><span id="hero-step">step 0</span></div>
+        <div class="tape" id="tapeA"></div>
+        <div class="tape-label"><span>tape[64–127] · partner, being overwritten</span><span id="hero-copied">0 bytes copied</span></div>
+        <div class="tape" id="tapeB"></div>
+        <div class="tape-label" id="cmp-label" hidden><span>parent, reversed</span><span id="cmp-score"></span></div>
+        <div class="tape" id="tapeR" hidden></div>
+      </div>
+      <div class="result-line" id="hero-result"></div>
+      <div class="controls">
+        <button class="primary" id="hero-play" type="button">Play</button>
+        <button id="hero-next" type="button">Next generation</button>
+        <button id="hero-reset" type="button">New partner</button>
+        <label class="readout" for="hero-speed">speed</label>
+        <select id="hero-speed"><option value="1">slow</option><option value="4" selected>normal</option><option value="40">fast</option></select>
+      </div>
+      <div class="legend">
+        <span><i style="color:var(--loop)">[ ]</i> loop</span>
+        <span><i style="color:var(--copy)">. ,</i> copy</span>
+        <span><i style="color:var(--move)">&lt; &gt; { }</i> move a head</span>
+        <span><i style="color:var(--arith)">+ -</i> add</span>
+        <span><i style="color:var(--zero)">0</i> zero byte</span>
+        <span><i style="color:var(--filler)">·</i> any other byte (does nothing)</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="soup">
+    <div class="stack measure">
+      <div class="eyebrow">The setup</div>
+      <h2>Ten instructions, no goal</h2>
+      <p>The world is the BFF soup from <a href="https://arxiv.org/abs/2406.19108">Agüera y Arcas et al., “Computational Life” (2024)</a>: 131,072 tapes of 64 random bytes. Each epoch, tapes are paired at random, glued into one 128-byte tape, run for up to 8,192 steps, and split back. Of the 256 byte values, ten are instructions. Code and data share the tape, so running programs rewrite each other. Nothing selects anything.</p>
+      <p>We rebuilt Google’s reference simulator, <a href="https://github.com/paradigms-of-intelligence/cubff">cubff</a>, as a single C file that is 4–5× faster on a CPU and produces the same soup byte for byte (checked on 150 snapshots, four regimes). Then we ran world after world on a Mac mini, each for up to 16,384 epochs.</p>
+    </div>
+    <div class="ops" id="ops"></div>
+    <div class="chart-box"><canvas class="chart" id="traces" height="360"></canvas></div>
+    <p class="caption" id="traces-cap"></p>
+  </section>
+
+  <section id="atlas">
+    <div class="stack measure">
+      <div class="eyebrow">Atlas of origins</div>
+      <h2>Every origin, backwards</h2>
+      <p id="atlas-lede"></p>
+      <p>Copying backwards has a consequence. The child of <span class="hl-plus">+</span> is its mirror image <span class="hl-minus">−</span>, and the child of <span class="hl-minus">−</span> is <span class="hl-plus">+</span> again. For a lineage to survive, the mirror image has to work too. Evolution found two ways to do that. A few genomes became palindromes. Most carry a second, mirrored copy of their own copying machinery, so each strand runs its own. In the strips below, the outlined cell is the copy instruction each strand uses.</p>
+    </div>
+    <div class="legend"><span><i class="hl-plus">+</i> the most common genome in the world</span><span><i class="hl-minus">−</i> the same genome read backwards</span><span>▭ copy instruction used by that strand</span><span>bar: copies of + vs − among the soup’s 16 most common genomes</span></div>
+    <div class="plates" id="plates"></div>
+    <div class="proof">
+      <div class="eyebrow">Proved, not just tested</div>
+      <h3>For every one of the 256<sup>64</sup> possible partners</h3>
+      <p>Testing 2,012 partners is evidence; a proof covers all of them. For the genome of world 30 we wrote BFF’s rules in Lean 4, together with a second interpreter that treats every partner byte as unknown, and proved that the unknown bytes can never change what happens. The result is one theorem: whatever the partner, the tape ends as the parent followed by the parent reversed.</p>
+      <pre><code>theorem mirror_copy (B : Vector UInt8 64) :
+    run (P ++ B) = P ++ P.reverse</code></pre>
+      <p class="caption">Checked by Lean’s kernel, including the full 8,192-step run (<code>decide +kernel</code>, no <code>native_decide</code>, no <code>sorry</code>; axioms: <code>propext</code>, <code>Quot.sound</code>). The Lean interpreter agrees with our Python and C interpreters on 240 test tapes; that link is tested, not proved.</p>
+    </div>
+  </section>
+
+  <section id="rule">
+    <div class="stack measure">
+      <div class="eyebrow">The intervention</div>
+      <h2>Change one rule and the mirror disappears</h2>
+      <p>Why backwards? In the paper’s version of BFF, both heads start at position 0. The cheapest way to reach the partner is one step to the left, which wraps around to its last byte. Reaching the partner’s first byte instead takes 64 steps to the right. So the cheap copier writes from the partner’s end backwards while it reads itself forwards, and the copy comes out reversed.</p>
+      <p>Google’s code also has a variant where each program’s first two bytes set where its heads start. A genome can then point its write head straight at the start of its partner. We ran the same experiment under that rule. The prediction: forward copies, one strand, no palindromes.</p>
+    </div>
+    <div class="table-wrap"><table id="compare"></table></div>
+    <div class="stack measure">
+      <h3>Before life and after, across the whole soup</h3>
+      <p id="geo-lede"></p>
+    </div>
+    <div class="table-wrap"><table id="geo"></table></div>
+    <div class="plates" id="plates-heads"></div>
+  </section>
+
+  <section id="live">
+    <div class="stack measure">
+      <div class="eyebrow">Live, in your browser</div>
+      <h2>One rule, two kinds of life</h2>
+      <p>Both panels run the same simulator, ported to JavaScript and checked byte for byte against the C engine: 16,384 random tapes each, with 48 copies of an evolved replicator dropped in. Each 8×8 square is one tape. Tapes carrying the genome’s code are painted <span class="hl-plus">blue</span>; tapes carrying its mirror image, <span class="hl-minus">orange</span>. Left: the paper’s rule and a genome that evolved under it. Right: heads set by the genome, and a genome that evolved under that rule.</p>
+    </div>
+    <div class="controls">
+      <button class="primary" id="soup-play" type="button">Start both</button>
+      <button id="soup-reset" type="button">Reset</button>
+      <label class="readout" for="soup-view">paint</label>
+      <select id="soup-view"><option value="strands">strands</option><option value="bytes">instructions</option></select>
+      <span class="readout" id="soup-epoch">epoch 0</span>
+    </div>
+    <div class="ab">
+      <figure class="ab-panel" id="panel-a">
+        <figcaption><b>Heads start at 0</b><span class="readout" data-role="genome"></span></figcaption>
+        <canvas class="soup-canvas" width="1024" height="1024" aria-label="Soup under the paper's rule"></canvas>
+        <div class="meter"><span class="hl-plus">+</span><div class="bar"><div data-role="mp" style="background:var(--plus)"></div></div><span data-role="np">0</span></div>
+        <div class="meter"><span class="hl-minus">−</span><div class="bar"><div data-role="mm" style="background:var(--minus)"></div></div><span data-role="nm">0</span></div>
+      </figure>
+      <figure class="ab-panel" id="panel-b">
+        <figcaption><b>Heads set by the genome</b><span class="readout" data-role="genome"></span></figcaption>
+        <canvas class="soup-canvas" width="1024" height="1024" aria-label="Soup under the genome-set heads rule"></canvas>
+        <div class="meter"><span class="hl-plus">+</span><div class="bar"><div data-role="mp" style="background:var(--plus)"></div></div><span data-role="np">0</span></div>
+        <div class="meter"><span class="hl-minus">−</span><div class="bar"><div data-role="mm" style="background:var(--minus)"></div></div><span data-role="nm">0</span></div>
+      </figure>
+    </div>
+    <p class="caption">A tape counts as + or − when at least 80% of the genome’s instruction bytes sit at the same positions in it, read forwards or backwards. Mutation stays on (1/4096 per byte), so the colours are lineages, not exact copies.</p>
+  </section>
+
+  <!--PROMPT_SOUP_SECTION-->
+
+  <section id="checks">
+    <div class="stack measure">
+      <div class="eyebrow">What we checked, and what we did not</div>
+      <h2>Methods</h2>
+    </div>
+    <div class="notes" id="notes"></div>
+  </section>
+  <footer>Built from the Computational Life paper and Google’s cubff (Apache-2.0). The experiment and the language are theirs; the engine port, the atlas, the mirror-strand analysis and the prompt soup are ours.</footer>
+</div>
+
+<script id="atlas-data" type="application/json">/*ATLAS_JSON*/</script>
+<script id="film-data" type="application/json">/*FILM_JSON*/</script>
+<script id="geo-data" type="application/json">/*COPYGEO_JSON*/</script>
+<script id="universal-data" type="application/json">/*UNIVERSAL_JSON*/</script>
+<script id="engine-src" type="text/plain">/*ENGINE_JS*/</script>
+<script>
+(() => {
+"use strict";
+const D = JSON.parse(document.getElementById("atlas-data").textContent);
+let U = {};
+try { U = JSON.parse(document.getElementById("universal-data").textContent); } catch (e) { U = {}; }
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const OPCLASS = {60: "move", 62: "move", 123: "move", 125: "move", 43: "arith", 45: "arith", 46: "copy", 44: "copy", 91: "loop", 93: "loop"};
+const glyph = (b) => (OPCLASS[b] ? String.fromCharCode(b) : b === 0 ? "0" : "·");
+const cls = (b) => (OPCLASS[b] ? "o-" + OPCLASS[b] : b === 0 ? "o-zero" : "f");
+const hex2 = (h) => Uint8Array.from(h.match(/../g).map((x) => parseInt(x, 16)));
+const fmt = (n) => n.toLocaleString("en-US");
+
+// ---------------------------------------------------------------- numbers
+const NH = D.noheads, HD = D.heads;
+const nhAlive = NH.filter((w) => w.t >= 0), nhRep = NH.filter((w) => w.rep);
+const nhMirror = nhRep.filter((w) => (w.rev || 0) > (w.fwd || 0));
+const nhBoth = nhMirror.filter((w) => w.rev_count > 0);
+const hdRep = HD.filter((w) => w.rep);
+const hdMirror = hdRep.filter((w) => (w.rev || 0) > (w.fwd || 0));
+const pct = (a, b) => Math.round((100 * a) / b);
+document.getElementById("stats").innerHTML = [
+  [fmt(NH.length), "worlds of 131,072 random programs, up to 16,384 epochs each"],
+  [`${nhRep.length}`, `came alive (${pct(nhRep.length, NH.length)}%; the paper reports 40%)`],
+  [`${nhMirror.length}/${nhRep.length}`, "copy themselves backwards"],
+  [`${nhBoth.length}/${nhMirror.length}`, "of those live as two mirror strands in equal numbers"],
+].map(([b, s]) => `<div class="stat"><b>${b}</b><span>${s}</span></div>`).join("");
+
+// ---------------------------------------------------------------- interpreter (cubff semantics)
+function Machine(tape, heads) {
+  this.t = tape; this.pos = 0; this.h0 = 0; this.h1 = 0; this.steps = 0; this.done = false;
+  if (heads) { this.h0 = tape[0] % 128; this.h1 = tape[1] % 128; this.pos = 2; }
+}
+// One step. Returns {src, dst} when a byte was copied, else null.
+Machine.prototype.step = function () {
+  if (this.done) return null;
+  const t = this.t;
+  this.h0 &= 127; this.h1 &= 127;
+  let ev = null;
+  switch (t[this.pos]) {
+    case 60: this.h0--; break;
+    case 62: this.h0++; break;
+    case 123: this.h1--; break;
+    case 125: this.h1++; break;
+    case 43: t[this.h0] = (t[this.h0] + 1) & 255; break;
+    case 45: t[this.h0] = (t[this.h0] - 1) & 255; break;
+    case 46: ev = { src: this.h0, dst: this.h1 }; t[this.h1] = t[this.h0]; break;
+    case 44: ev = { src: this.h1, dst: this.h0 }; t[this.h0] = t[this.h1]; break;
+    case 91:
+      if (t[this.h0] === 0) {
+        let d = 1; this.pos++;
+        for (; this.pos < 128 && d > 0; this.pos++) { if (t[this.pos] === 93) d--; if (t[this.pos] === 91) d++; }
+        this.pos--; if (d !== 0) this.pos = 128;
+      }
+      break;
+    case 93:
+      if (t[this.h0] !== 0) {
+        let d = 1; this.pos--;
+        for (; this.pos >= 0 && d > 0; this.pos--) { if (t[this.pos] === 93) d++; if (t[this.pos] === 91) d--; }
+        this.pos++; if (d !== 0) { this.done = true; return ev; }
+      }
+      break;
+  }
+  this.steps++;
+  this.pos++;
+  if (this.pos >= 128 || this.steps >= 8192) this.done = true;
+  return ev;
+};
+
+// ---------------------------------------------------------------- hero
+// A two-machine genome makes the reversal visible; a palindrome would look unchanged.
+let filmSeed = null;
+try { filmSeed = JSON.parse(document.getElementById("film-data").textContent).seed; } catch (e) { filmSeed = null; }
+const heroWorld = nhBoth.find((w) => w.seed === filmSeed && w.skel < 0.9) ||
+  nhBoth.filter((w) => w.skel < 0.9).sort((a, b) => b.rep_count - a.rep_count)[0];
+document.getElementById("hero-world").textContent = heroWorld.seed;
+const elA = document.getElementById("tapeA"), elB = document.getElementById("tapeB"), elR = document.getElementById("tapeR");
+const cellsA = [], cellsB = [], cellsR = [];
+for (let i = 0; i < 64; i++) {
+  const a = document.createElement("span"), b = document.createElement("span"), r = document.createElement("span");
+  a.className = b.className = r.className = "cell";
+  elA.appendChild(a); elB.appendChild(b); elR.appendChild(r);
+  cellsA.push(a); cellsB.push(b); cellsR.push(r);
+}
+let parent = hex2(heroWorld.rep), partnerSeed = 1, gen = 0, M = null, playing = false, copied = new Set(), raf = 0;
+function rnd(seed) { let s = seed >>> 0; return () => { s = (s + 0x6d2b79f5) >>> 0; let z = s; z = Math.imul(z ^ (z >>> 15), z | 1); z ^= z + Math.imul(z ^ (z >>> 7), z | 61); return ((z ^ (z >>> 14)) >>> 0) / 4294967296; }; }
+function heroInit() {
+  const r = rnd(partnerSeed * 7919 + gen);
+  const tape = new Uint8Array(128);
+  tape.set(parent, 0);
+  for (let i = 64; i < 128; i++) tape[i] = Math.floor(r() * 256);
+  M = new Machine(tape, false); copied = new Set();
+  document.getElementById("cmp-label").hidden = true; elR.hidden = true;
+  document.getElementById("hero-result").textContent = gen === 0
+    ? "The + strand: the most common genome in its world."
+    : `Generation ${gen}: now the ${gen % 2 ? "− strand" : "+ strand"} is the parent.`;
+  heroDraw(null);
+}
+function paint(cell, b) { cell.textContent = glyph(b); cell.className = "cell " + cls(b); }
+function heroDraw(ev) {
+  const t = M.t;
+  for (let i = 0; i < 64; i++) { paint(cellsA[i], t[i]); paint(cellsB[i], t[64 + i]); if (copied.has(64 + i)) cellsB[i].classList.add("written"); }
+  const at = (p) => (p < 64 ? cellsA[p] : cellsB[p - 64]);
+  if (M.pos < 128 && !M.done) at(M.pos).classList.add("ip");
+  at(M.h0 & 127).classList.add("h0"); at(M.h1 & 127).classList.add("h1");
+  if (ev) { at(ev.src).classList.add("src"); at(ev.dst).classList.add("dst"); }
+  document.getElementById("hero-step").textContent = `step ${fmt(M.steps)}`;
+  document.getElementById("hero-copied").textContent = `${copied.size} of 64 bytes written`;
+}
+function mirrorDone() { const t = M.t; for (let i = 0; i < 64; i++) if (t[64 + i] !== t[63 - i]) return false; return true; }
+function heroFinish() {
+  playing = false; document.getElementById("hero-play").textContent = "Play";
+  const t = M.t; let same = 0, fwd = 0;
+  for (let i = 0; i < 64; i++) { paint(cellsR[i], t[63 - i]); if (t[64 + i] === t[63 - i]) { same++; cellsR[i].classList.add("match"); } if (t[64 + i] === t[i]) fwd++; }
+  document.getElementById("cmp-label").hidden = false; elR.hidden = false;
+  document.getElementById("cmp-score").textContent = `${same}/64 bytes match`;
+  document.getElementById("hero-result").textContent = `Done after ${fmt(M.steps)} steps. The partner now holds the parent reversed (${same}/64 bytes), and only ${fwd}/64 of it reads the same forwards.`;
+}
+function heroTick() {
+  const speed = +document.getElementById("hero-speed").value;
+  let ev = null;
+  for (let k = 0; k < speed && !M.done; k++) {
+    // skip runs of filler so each frame shows something happening
+    let guard = 0;
+    do { ev = M.step(); guard++; } while (!ev && !M.done && !OPCLASS[M.t[M.pos]] && guard < 256);
+    if (ev && ev.src < 64 && ev.dst >= 64) copied.add(ev.dst);
+    if (mirrorDone()) { M.done = true; }
+  }
+  heroDraw(ev);
+  if (M.done) { heroFinish(); return; }
+  if (playing) raf = setTimeout(() => requestAnimationFrame(heroTick), speed === 1 ? 90 : 16);
+}
+document.getElementById("hero-play").onclick = () => {
+  if (M.done) heroInit();
+  playing = !playing; document.getElementById("hero-play").textContent = playing ? "Pause" : "Play";
+  if (playing) heroTick();
+};
+document.getElementById("hero-reset").onclick = () => { playing = false; clearTimeout(raf); partnerSeed++; heroInit(); document.getElementById("hero-play").textContent = "Play"; };
+document.getElementById("hero-next").onclick = () => {
+  playing = false; clearTimeout(raf);
+  if (!M.done) { while (!M.done) { const ev = M.step(); if (ev && ev.src < 64 && ev.dst >= 64) copied.add(ev.dst); if (mirrorDone()) M.done = true; } }
+  parent = M.t.slice(64, 128); gen++; heroInit(); document.getElementById("hero-play").textContent = "Play";
+};
+heroInit();
+
+// ---------------------------------------------------------------- film (world 52 time-lapse)
+try {
+  const F = JSON.parse(document.getElementById("film-data").textContent);
+  const fig = document.getElementById("film"), vid = document.getElementById("film-video");
+  fig.hidden = false;
+  const last = F.plus.length - 1;
+  document.getElementById("film-cap").textContent =
+    `World ${F.seed} coming alive by itself, filmed from epoch ${fmt(F.epoch[0])} to ${fmt(F.epoch[last])} and slowed down while it happens. Each pixel is one of its 131,072 programs; grey ones get brighter the more instructions they carry. Blue marks programs carrying the genome that won, orange the same genome reversed. The two strands spread together and end at ${fmt(F.plus[last])} and ${fmt(F.minus[last])}. Nothing here was seeded.`;
+  // log-scale strand counts under the film, with a cursor that follows the video
+  const i0 = Math.max(0, F.plus.findIndex((v, k) => v + F.minus[k] > 0) - 3);
+  const drawFilm = (cur) => {
+    const cv = document.getElementById("film-chart");
+    const W = cv.clientWidth, H = 220, dpr = window.devicePixelRatio || 1;
+    if (cv.width !== W * dpr) { cv.width = W * dpr; cv.height = H * dpr; cv.style.height = H + "px"; }
+    const g = cv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+    const L = 52, R = 12, T = 12, B = 28, e0 = F.epoch[i0], e1 = F.epoch[last];
+    const x = (e) => L + ((e - e0) / (e1 - e0)) * (W - L - R);
+    const y = (v) => T + (1 - Math.log10(Math.max(1, v)) / Math.log10(131072)) * (H - T - B);
+    g.font = "11px " + css("--mono"); g.lineWidth = 1;
+    for (const v of [1, 10, 100, 1000, 10000, 100000]) {
+      g.strokeStyle = css("--rule"); g.beginPath(); g.moveTo(L, y(v)); g.lineTo(W - R, y(v)); g.stroke();
+      g.fillStyle = css("--ink-3"); g.fillText(v >= 1000 ? v / 1000 + "k" : String(v), 8, y(v) + 4);
+    }
+    const span = e1 - e0, step = span > 300 ? 100 : 20;
+    for (let e = Math.ceil(e0 / step) * step; e <= e1; e += step) g.fillText(fmt(e), x(e) - 14, H - 8);
+    // the minus strand is drawn wide underneath so both stay visible where they coincide
+    for (const [arr, col, lw] of [[F.minus, "--minus", 5], [F.plus, "--plus", 1.8]]) {
+      g.strokeStyle = css(col); g.lineWidth = lw; g.beginPath(); let st = false;
+      for (let k = i0; k <= last; k++) { if (arr[k] <= 0) continue; st ? g.lineTo(x(F.epoch[k]), y(arr[k])) : g.moveTo(x(F.epoch[k]), y(arr[k])); st = true; }
+      g.stroke();
+    }
+    if (cur >= i0) { g.strokeStyle = css("--ink"); g.lineWidth = 1; g.beginPath(); g.moveTo(x(F.epoch[cur]), T); g.lineTo(x(F.epoch[cur]), H - B); g.stroke(); }
+    g.fillStyle = css("--ink-3"); g.fillText("copies (log scale)", L + 6, T + 10);
+  };
+  let lastCur = -1;
+  window.addEventListener("resize", () => { lastCur = -1; });
+  const hud = () => {
+    const ct = vid.currentTime || 0;
+    let i = 0;
+    while (i < last && F.t[i + 1] <= ct) i++;
+    if (i !== lastCur) { drawFilm(i); lastCur = i; }
+    document.getElementById("film-epoch").textContent = `epoch ${fmt(F.epoch[i])}`;
+    document.getElementById("film-plus").textContent = fmt(F.plus[i]);
+    document.getElementById("film-minus").textContent = fmt(F.minus[i]);
+    requestAnimationFrame(hud);
+  };
+  requestAnimationFrame(hud);
+} catch (e) { /* no film data in this build */ }
+
+// ---------------------------------------------------------------- ops legend
+const OPS = [["[", "loop", "jump past ] if byte at head 0 is 0"], ["]", "loop", "jump back to [ if byte at head 0 is not 0"],
+  [".", "copy", "head 0 → head 1"], [",", "copy", "head 1 → head 0"], ["+", "arith", "add 1 at head 0"], ["-", "arith", "subtract 1 at head 0"],
+  ["<", "move", "head 0 left"], [">", "move", "head 0 right"], ["{", "move", "head 1 left"], ["}", "move", "head 1 right"]];
+document.getElementById("ops").innerHTML = OPS.map(([g, c, d]) => `<div class="op"><b style="color:var(--${c})">${g}</b><span>${d}</span></div>`).join("");
+
+// ---------------------------------------------------------------- traces chart
+function drawTraces() {
+  const cv = document.getElementById("traces");
+  const W = cv.clientWidth, H = 360, dpr = window.devicePixelRatio || 1;
+  cv.width = W * dpr; cv.height = H * dpr; cv.style.height = H + "px";
+  const g = cv.getContext("2d"); g.scale(dpr, dpr);
+  const L = 44, R = 14, T = 16, B = 34, EMAX = 16384, YMAX = 5;
+  const x = (e) => L + (e / EMAX) * (W - L - R), y = (v) => T + (1 - Math.max(-0.2, Math.min(YMAX, v)) / YMAX) * (H - T - B);
+  g.font = "11px " + css("--mono"); g.fillStyle = css("--ink-3"); g.strokeStyle = css("--rule"); g.lineWidth = 1;
+  for (let v = 0; v <= YMAX; v++) { g.beginPath(); g.moveTo(L, y(v)); g.lineTo(W - R, y(v)); g.stroke(); g.fillText(String(v), L - 16, y(v) + 4); }
+  for (let e = 0; e <= EMAX; e += 4096) { g.fillText(fmt(e), Math.min(x(e) - 10, W - R - 36), H - 12); }
+  g.save(); g.fillText("high-order entropy, bits/byte", L + 4, T + 10); g.restore();
+  g.setLineDash([4, 4]); g.strokeStyle = css("--ink-3"); g.beginPath(); g.moveTo(L, y(3)); g.lineTo(W - R, y(3)); g.stroke(); g.setLineDash([]);
+  g.fillText("transition threshold", W - R - 130, y(3) - 6);
+  const drawOne = (w, color, lw) => {
+    g.strokeStyle = color; g.lineWidth = lw; g.beginPath();
+    w.trace.forEach((v, i) => { const e = i * 64; i ? g.lineTo(x(e), y(v)) : g.moveTo(x(e), y(v)); });
+    g.stroke();
+  };
+  NH.filter((w) => w.t < 0).forEach((w) => drawOne(w, css("--filler"), 1));
+  NH.filter((w) => w.t >= 0).forEach((w) => drawOne(w, w.rep && (w.rev || 0) > (w.fwd || 0) ? css("--minus") : css("--zero"), 1.6));
+  NH.filter((w) => w.t >= 0).forEach((w) => { g.fillStyle = css("--ink"); g.beginPath(); g.arc(x(w.t), y(3), 2.6, 0, 7); g.fill(); });
+  g.fillStyle = css("--ink-3"); g.fillText("epoch", W - R - 36, H - 24);
+}
+drawTraces();
+let rs = 0; window.addEventListener("resize", () => { clearTimeout(rs); rs = setTimeout(drawTraces, 150); });
+document.getElementById("traces-cap").textContent =
+  `Each line is one world (${NH.length} in total). Grey worlds stayed noise for all 16,384 epochs. Orange worlds came alive: their complexity jumps as one replicator takes over (dots mark where it crossed the threshold used in cubff’s own scripts, 3 bits/byte). The red line is the one world where the takeover was a sloppy frame-shifting copier trailing zeros.`;
+
+// ---------------------------------------------------------------- plates
+function strip(bytes, mach) {
+  return `<div class="strip">${Array.from(bytes, (b, i) => `<i class="${OPCLASS[b] ? "o-" + OPCLASS[b] : b === 0 ? "o-zero" : ""}${mach.includes(i) ? " mach" : ""}" title="${i}: ${glyph(b)}"></i>`).join("")}</div>`;
+}
+function plate(w, heads) {
+  const p = hex2(w.rep), r = p.slice().reverse();
+  const mirror = (w.rev || 0) > (w.fwd || 0);
+  let badge;
+  if (heads) badge = `<span class="badge fwd">forward copier</span>`;
+  else if (!mirror) badge = `<span class="badge odd">frame-shifting</span>`;
+  else if (w.mirror <= w.shift + w.other) badge = `<span class="badge odd">mirror with offset</span>`;
+  else if (w.skel >= 0.9) badge = `<span class="badge pal">palindrome</span>`;
+  else badge = `<span class="badge two">two machines</span>`;
+  const tot = w.rep_count + w.rev_count;
+  const steps = (w.rev || 0) + (w.fwd || 0);
+  const how = steps ? `${w.rev >= w.fwd ? "copies backwards" : "copies forwards"}: ${pct(Math.max(w.rev, w.fwd), steps)}% of copy steps` : "";
+  const rows = heads || !mirror
+    ? `<div class="strip-row"><span class="sgn hl-plus">+</span>${strip(p, w.mach)}</div>`
+    : `<div class="strip-row"><span class="sgn hl-plus">+</span>${strip(p, w.mach)}</div><div class="strip-row"><span class="sgn hl-minus">−</span>${strip(r, w.mach_rev.map((i) => 63 - i))}</div>`;
+  return `<article class="plate">
+    <header><h3>World ${w.seed}</h3>${badge}</header>
+    ${rows}
+    <div class="glyphs">${Array.from(p, glyph).join("")}</div>
+    <div class="ratio" title="+ ${w.rep_count} · − ${w.rev_count}"><div class="p" style="width:${(100 * w.rep_count) / tot}%"></div><div class="m" style="width:${(100 * w.rev_count) / tot}%"></div></div>
+    <div class="meta"><span>alive at epoch ${fmt(w.t)}</span><span>+ ${w.rep_count} · − ${w.rev_count}</span></div>
+    <div class="meta"><span>${how}</span></div>
+  </article>`;
+}
+document.getElementById("plates").innerHTML = nhRep.map((w) => plate(w, false)).join("");
+document.getElementById("plates-heads").innerHTML = hdRep.map((w) => plate(w, true)).join("");
+const pal = nhMirror.filter((w) => w.skel >= 0.9).length;
+const nhExact = nhMirror.filter((w) => w.mirror > w.shift + w.other);
+document.getElementById("atlas-lede").textContent = (() => {
+  const exact = nhMirror.filter((w) => w.mirror > w.shift + w.other).length;
+  const u = nhMirror.filter((w) => w.mirror > w.shift + w.other).map((w) => U[w.seed]).filter(Boolean);
+  const allU = u.length && u.every(([ok, n]) => ok === n);
+  return `Out of ${NH.length} worlds, ${nhRep.length} came alive. In ${nhMirror.length} of them the winning replicator copies itself backwards: its read head walks forward over the parent while its write head walks backward through the partner, so the child is the parent reversed. In ${exact} of those the reversal is exact (byte i lands at byte 127 − i). In ${nhBoth.length} worlds the reversed genome is itself among the most common programs, in almost exactly the same number as the original. Of the exact mirror copiers, ${pal} genomes are palindromes and the other ${nhExact.length - pal} carry two different copy machines.` +
+    (u.length ? (() => {
+      const perfect = u.filter(([ok, n]) => ok === n).length;
+      const worst = u.reduce((m, [ok, n]) => Math.min(m, ok / n), 1);
+      return ` The copying barely depends on the partner: ${perfect} of the ${u.length} exact mirror copiers wrote their reversed selves into all ${fmt(u[0][1])} partners we tried, including partners made only of instructions, and the least reliable one managed ${(100 * worst).toFixed(1)}%.`;
+    })() : "");
+})();
+
+// ---------------------------------------------------------------- compare table
+const row = (label, a, b) => `<tr><td>${label}</td><td class="num">${a}</td><td class="num">${b}</td></tr>`;
+const hdAlive = HD.filter((w) => w.t >= 0);
+document.getElementById("compare").innerHTML =
+  `<thead><tr><th></th><th style="text-align:right">heads start at 0</th><th style="text-align:right">heads set by genome</th></tr></thead><tbody>` +
+  row("worlds run", NH.length, HD.length) +
+  row("came alive", `${nhRep.length} (${pct(nhRep.length, NH.length)}%)`, `${hdRep.length} (${pct(hdRep.length, HD.length)}%)`) +
+  row("copy mirror-reversed", `${nhMirror.length}/${nhRep.length}`, `${hdMirror.length}/${hdRep.length}`) +
+  row("mirror strand in top 16", `${nhBoth.length}/${nhRep.length}`, `${hdRep.filter((w) => w.rev_count > 0).length}/${hdRep.length}`) +
+  row("palindromes", `${pal}`, `${hdRep.filter((w) => w.skel >= 0.9).length}`) +
+  `</tbody>`;
+
+// ---------------------------------------------------------------- soup-wide copy direction
+try {
+  const G = JSON.parse(document.getElementById("geo-data").textContent);
+  const share = (k) => G[k] ? G[k].rev / Math.max(1, G[k].rev + G[k].fwd) : null;
+  const dots = (k) => (G[k] ? G[k].per.slice().sort((a, b) => a - b).map((v) => `<i title="${(100 * v).toFixed(1)}%" style="display:inline-block;width:7px;height:14px;margin-right:2px;border-radius:2px;background:${v >= 0.5 ? "var(--minus)" : "var(--plus)"}"></i>`).join("") : "");
+  const cell = (k) => G[k] ? `${(100 * share(k)).toFixed(1)}% <span class="readout">(${G[k].soups} soups)</span>` : "—";
+  document.getElementById("geo").innerHTML =
+    `<thead><tr><th>copy steps that run backwards</th><th style="text-align:right">heads start at 0</th><th style="text-align:right">heads set by genome</th></tr></thead><tbody>` +
+    `<tr><td>random soup, before life</td><td class="num">${cell("control-noheads")}</td><td class="num">${cell("control-heads")}</td></tr>` +
+    `<tr><td>living soups</td><td class="num">${cell("alive-noheads")}</td><td class="num">${cell("alive-heads")}</td></tr>` +
+    `<tr><td>one mark per living world</td><td class="num">${dots("alive-noheads")}</td><td class="num">${dots("alive-heads")}</td></tr></tbody>`;
+  const hdAliveGeo = G["alive-heads"] ? G["alive-heads"].per : [], nhAliveGeo = G["alive-noheads"] ? G["alive-noheads"].per : [];
+  const pct1 = (k) => (100 * share(k)).toFixed(share(k) > 0.999 || share(k) < 0.001 ? 2 : 1);
+  const steps = (k) => fmt(G[k].rev + G[k].fwd);
+  document.getElementById("geo-lede").textContent =
+    `To make sure this is not an artefact of looking only at the most common genome, we sampled real pairs from each soup, ran them, and logged every byte that crossed from one partner to the other. A copy step runs backwards when, between two consecutive copies by the same instruction, the read and write heads step in opposite directions. ` +
+    `Before life, copying loops are rare and weakly biased: under the paper’s rule ${pct1("control-noheads")}% of ${steps("control-noheads")} accidental copy steps run backwards, because one step left from position 0 already lands in the partner; when the genome sets the heads, it is ${pct1("control-heads")}% of ${steps("control-heads")}, no preference at all. ` +
+    `Life then takes one direction completely: ${pct1("alive-noheads")}% of ${steps("alive-noheads")} copy steps run backwards in the ${G["alive-noheads"].soups} living soups under the paper’s rule, and ${pct1("alive-heads")}% of ${steps("alive-heads")} in the ${G["alive-heads"].soups} living soups under the other rule.`;
+} catch (e) { /* no copy-geometry data in this build */ }
+
+// ---------------------------------------------------------------- live soup: A/B (two workers)
+const engineSrc = document.getElementById("engine-src").textContent;
+function rgb(v) { const c = css(v); const m = c.match(/#(..)(..)(..)/); return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : [128, 128, 128]; }
+const WORKER_GLUE = `
+let soup = null, rep = null, ip = [], ir = [];
+const OPS = new Set([60, 62, 123, 125, 43, 45, 46, 44, 91, 93]);
+onmessage = (m) => {
+  const d = m.data;
+  if (d.cmd === "init") {
+    soup = createSoup({ N: 16384, seed: d.seed, heads: d.heads });
+    rep = Uint8Array.from(d.rep);
+    ip = []; ir = [];
+    for (let i = 0; i < 64; i++) { if (OPS.has(rep[i])) ip.push(i); if (OPS.has(rep[63 - i])) ir.push(i); }
+    let s = d.seed >>> 0; const r = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s; };
+    for (let k = 0; k < d.copies; k++) soup.bytes.set(rep, (r() % 16384) * 64);
+    send();
+  } else if (d.cmd === "step") { soup.runEpoch(); send(); }
+};
+function send() {
+  const b = soup.bytes, cls = new Uint8Array(16384); let plus = 0, minus = 0;
+  for (let t = 0; t < 16384; t++) {
+    let f = 0, g = 0; const o = t * 64;
+    for (const i of ip) if (b[o + i] === rep[i]) f++;
+    for (const i of ir) if (b[o + i] === rep[63 - i]) g++;
+    f /= ip.length; g /= ir.length;
+    if (f >= 0.8 && f >= g) { cls[t] = 1; plus++; } else if (g >= 0.8) { cls[t] = 2; minus++; }
+  }
+  const copy = b.slice();
+  postMessage({ epoch: soup.epoch, bytes: copy.buffer, cls: cls.buffer, plus, minus }, [copy.buffer, cls.buffer]);
+}`;
+const hdBest = hdRep.slice().sort((a, b) => b.child_fwd - a.child_fwd || b.rep_count - a.rep_count)[0];
+let running = false;
+function Panel(el, heads, world) {
+  this.el = el; this.heads = heads; this.world = world; this.rep = hex2(world.rep);
+  this.cv = el.querySelector("canvas"); this.g = this.cv.getContext("2d"); this.img = this.g.createImageData(1024, 1024);
+  this.bytes = null; this.cls = null; this.busy = false;
+  el.querySelector('[data-role="genome"]').textContent = `genome from world ${world.seed} · ${Array.from(this.rep, glyph).join("")}`;
+}
+Panel.prototype.start = function () {
+  if (this.w) this.w.terminate();
+  this.w = new Worker(URL.createObjectURL(new Blob([engineSrc.replace(/^export\s+/gm, "") + "\n" + WORKER_GLUE], { type: "text/javascript" })));
+  this.w.onmessage = (m) => {
+    const { epoch, bytes, cls, plus, minus } = m.data;
+    this.bytes = new Uint8Array(bytes); this.cls = new Uint8Array(cls); this.epoch = epoch; this.busy = false;
+    const q = (r) => this.el.querySelector(`[data-role="${r}"]`);
+    q("np").textContent = fmt(plus); q("nm").textContent = fmt(minus);
+    q("mp").style.width = (100 * plus) / 16384 + "%"; q("mm").style.width = (100 * minus) / 16384 + "%";
+    this.paint(); tick();
+  };
+  this.w.postMessage({ cmd: "init", heads: this.heads, rep: Array.from(this.rep), copies: 48, seed: 2026 });
+};
+Panel.prototype.paint = function () {
+  if (!this.bytes) return;
+  const view = document.getElementById("soup-view").value;
+  const pal = { loop: rgb("--loop"), copy: rgb("--copy"), move: rgb("--move"), arith: rgb("--arith"), zero: rgb("--zero"), fill: rgb("--panel"), plus: rgb("--plus"), minus: rgb("--minus"), ink: rgb("--filler") };
+  const d = this.img.data, bytes = this.bytes, cls = this.cls;
+  for (let t = 0; t < 16384; t++) {
+    const base = t * 64, tx = (t & 127) * 8, ty = (t >> 7) * 8;
+    const tint = view === "strands" ? (cls[t] === 1 ? pal.plus : cls[t] === 2 ? pal.minus : null) : null;
+    for (let i = 0; i < 64; i++) {
+      const v = bytes[base + i];
+      let c;
+      if (tint) c = OPCLASS[v] ? tint.map((x) => x * 0.7) : tint;
+      else if (view === "strands") c = OPCLASS[v] ? pal.ink : pal.fill;
+      else c = OPCLASS[v] ? pal[OPCLASS[v]] : v === 0 ? pal.zero : pal.fill;
+      const o = ((ty + (i >> 3)) * 1024 + tx + (i & 7)) * 4;
+      d[o] = c[0]; d[o + 1] = c[1]; d[o + 2] = c[2]; d[o + 3] = 255;
+    }
+  }
+  this.g.putImageData(this.img, 0, 0);
+};
+const panels = [new Panel(document.getElementById("panel-a"), false, heroWorld), new Panel(document.getElementById("panel-b"), true, hdBest)];
+// Step both soups in lockstep, so they always show the same epoch.
+function tick() {
+  if (panels.some((p) => p.busy)) return;
+  document.getElementById("soup-epoch").textContent = `epoch ${fmt(panels[0].epoch || 0)}`;
+  if (!running) return;
+  panels.forEach((p) => { p.busy = true; p.w.postMessage({ cmd: "step" }); });
+}
+function resetPanels() { running = false; document.getElementById("soup-play").textContent = "Start both"; panels.forEach((p) => { p.busy = true; p.start(); }); }
+document.getElementById("soup-play").onclick = () => {
+  running = !running; document.getElementById("soup-play").textContent = running ? "Pause" : "Start both";
+  if (running) tick();
+};
+document.getElementById("soup-reset").onclick = resetPanels;
+document.getElementById("soup-view").onchange = () => panels.forEach((p) => p.paint());
+if (engineSrc.includes("createSoup")) resetPanels();
+
+// ---------------------------------------------------------------- notes
+const NOTES = [
+  ["Byte-exact with Google’s code", "Our C engine, a naive build of it, and cubff compiled from source produced identical soups at all 150 checkpoints we compared: random soups with and without mutation, both head rules, and a soup seeded with the paper’s hand-written replicator. The speed-ups (skipping runs of inert bytes, fast-forwarding exact cycles) change no result."],
+  ["Reproducible to the epoch", "Every world is a pure function of its seed. Worlds 29 and 38, re-run from scratch on a different Mac, came alive at exactly the same epochs (945 and 913) with identical census tables; world 52, re-run twice for the film, ended with the same soup the atlas run saved."],
+  ["Copy direction across the whole soup", "The most common genome might not speak for a soup, so we also sampled 4,096 real pairs from every living soup (65,536 from the random controls), logged every byte that crossed between partners, and counted the direction of each step between consecutive copies by the same instruction. A first version of this count also paired a ‘.’ with a following ‘,’, which swaps source and destination without any head moving; the controls exposed it and it is excluded."],
+  ["Same numbers as the paper", `The paper reports a transition in 40% of runs within 16k epochs. We see ${nhRep.length} of ${NH.length} (${pct(nhRep.length, NH.length)}%) with the same settings: 131,072 programs, mutation 1/4096 per byte, 8,192-step limit.`],
+  ["How a world is called alive", "A world counts as alive when its high-order entropy (Shannon entropy minus brotli bits per byte, as cubff computes it) first exceeds 3 bits and its most common programs pass cubff’s own replication test (score ≥ 5). The one world where the top program failed that test is shown separately."],
+  ["Any partner at all", (() => {
+    const mir = nhMirror.filter((w) => w.mirror > w.shift + w.other && U[w.seed]);
+    const perfect = mir.filter((w) => U[w.seed][0] === U[w.seed][1]).map((w) => w.seed);
+    const imperfect = mir.filter((w) => U[w.seed][0] !== U[w.seed][1]).map((w) => `world ${w.seed}: ${fmt(U[w.seed][0])}/${fmt(U[w.seed][1])}`);
+    const fwd = hdRep.filter((w) => U[w.seed]);
+    const fwdExact = fwd.filter((w) => U[w.seed][0] === U[w.seed][1]).length;
+    return `Each exact mirror copier was also run against 1,500 random partners, 500 partners made only of instruction bytes, and 12 constant partners, counting a success when the partner half ends as the exact reversed genome and the parent is untouched. ${perfect.length} of ${mir.length} succeed every time` +
+      (imperfect.length ? ` (the rest: ${imperfect.join("; ")}).` : ".") +
+      ` Under the second rule, ${fwdExact} of ${fwd.length} forward copiers make an exact copy every time; the others copy most bytes but slip at the edges.`;
+  })()],
+  ["How copying was measured", "For each winner we ran it against 16 random partners in an independent Python interpreter and logged every byte it moved into the partner: its source index and destination index. Mirror means destination = 127 − source."],
+  ["Smaller sample for the second rule", `The genome-set-heads variant has ${HD.length} worlds, because we started it later. ${hdMirror.length === 0 ? `None of its ${hdRep.length} origins copies mirror-reversed.` : `${hdMirror.length} of its ${hdRep.length} origins copy mirror-reversed.`}`],
+  ["What this is not", "BFF has no chemistry, no base pairing and no complementary strands. A mirror strand here is a reversed byte string, not a complement. The parallel to double-stranded genomes is an analogy about copying geometry, not a model of biology."],
+];
+document.getElementById("notes").innerHTML = NOTES.map(([h, p]) => `<div><h3>${h}</h3><p>${p}</p></div>`).join("");
+})();
+</script>
