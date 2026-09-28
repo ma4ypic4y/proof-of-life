@@ -6,7 +6,7 @@ In Google's *Computational Life* experiment, self-replicating programs appear on
 
 <p align="center"><img src="media/explosion.gif" width="560" alt="World 52: one program becomes 91,764 descendants in 49 epochs; blue copies read forwards, orange read backwards"></p>
 
-**▶ [Video (28 s)](docs/media/proof_of_life_720p.mp4) · [Run the proof in your browser](https://ma4ypic4y.github.io/proof-of-life/proof/) · [The mirror-strand study](https://ma4ypic4y.github.io/proof-of-life/life/)**
+**▶ [Video (28 s)](https://ma4ypic4y.github.io/proof-of-life/) · [Run the proof in your browser](https://ma4ypic4y.github.io/proof-of-life/proof/) · [The mirror-strand study](https://ma4ypic4y.github.io/proof-of-life/life/)**
 
 ---
 
@@ -16,11 +16,14 @@ In Google's *Computational Life* experiment, self-replicating programs appear on
 
 ```lean
 theorem birth_certificate_world52 :
-    run (A ++ B) = A_out ++ C ∧                                        -- the actual collision
-    (∀ X : Vector UInt8 64, run (C ++ X) = C ++ C.reverse) ∧            -- the newborn copies itself into any partner
-    (∀ X : Vector UInt8 64, run (C.reverse ++ X) = C.reverse ++ C) ∧    -- and so does its mirror strand
-    (run (A ++ killer_A) ≠ A ++ A.reverse ∧ run (A ++ killer_A) ≠ A ++ A) ∧   -- parent A is not a replicator
-    (run (B ++ killer_B) ≠ B ++ B.reverse ∧ run (B ++ killer_B) ≠ B ++ B)     -- neither is parent B
+    -- the actual collision
+    run (A ++ B) = A_out ++ C ∧
+    -- the newborn copies itself, reversed, into any partner, and so does its mirror strand
+    (∀ X : Vector UInt8 64, run (C ++ X) = C ++ C.reverse) ∧
+    (∀ X : Vector UInt8 64, run (C.reverse ++ X) = C.reverse ++ C) ∧
+    -- neither parent is a replicator
+    (run (A ++ killer_A) ≠ A ++ A.reverse ∧ run (A ++ killer_A) ≠ A ++ A) ∧
+    (run (B ++ killer_B) ≠ B ++ B.reverse ∧ run (B ++ killer_B) ≠ B ++ B)
 ```
 
 **2. Life copies itself backwards.** Under the paper's rules, 23 of the 24 replicators that emerged copy themselves backwards: the read head walks forward over the parent while the write head walks backward through the partner. In 22 of them the reversal is exact (byte *i* of the parent lands at byte 127 − *i*). Across whole living soups, **99.99% of 24.2 million copy steps run backwards**. So every species lives as two mirror strands in equal numbers (world 52 ends with 45,393 forward and 45,405 reversed copies). The soup meets this constraint in two ways: 7 genomes are palindromes, and 15 carry two different copy machines, one for each reading direction.
